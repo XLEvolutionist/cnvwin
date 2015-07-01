@@ -235,7 +235,157 @@ eval $cmd
 
 echo &quot;Ending Job: &quot;
 date</code></pre>
+<p>The data then need to be modifed using a custom perl script <code>angsd2GenomicRanges.pl</code> that converts the output of <code>ANGSD</code> into something GenomicRanges can understand.</p>
+<pre><code>#!/usr/bin/perl
+use strict;
+use warnings;
+
+# Simon Renny-Byfield, UC Davis, March 17th 2015
+
+#usage script.pl &lt;angsd output&gt; &gt;outfile
+
+# This script will take angsd output (.pestPG file) and convert format suitable 
+# for input into GenomicRanges. The purpose is to associate regions in maize genome
+# that have estimates of Tajima's D and relate those estimates to particular genes. 
+# In short each window from the angsd analysis will be labelled with the corresponding 
+# gene name using GenomicRanges. 
+
+# The output from angsd looks like this..
+
+# ## thetaStat VERSION: 0.01 build:(Oct 23 2014,15:39:05)
+# #(indexStart,indexStop)(firstPos_withData,lastPos_withData)(WinStart,WinStop)  Chr    WinCenter   tW  tP  tF  tH  tL  Tajima  fuf fud fayh    zeng    nSites
+# (25,53)(1778322,1778350)(1778250,1778350) 1   1778300 1.661604    0.550991    3.218805    1.968841    1.259916    -2.122087   -1.758895   -1.220118   -0.736941   -0.208055   28
+# (25,96)(1778322,1778532)(1778300,1778400) 1   1778350 3.663915    2.025260    7.192596    3.483926    2.754594    -1.622298   -1.918688   -1.580332   -0.370203   -0.240505   71
+# (53,96)(1778350,1778532)(1778350,1778450) 1   1778400 2.002310    1.474270    3.973791    1.515086    1.494677    -0.869529   -1.449146   -1.362891   -0.017994   -0.225741   43
+# (96,127)(1778532,1778731)(1778500,1778600)    1   1778550 0.235098    0.097436    0.000001    0.005128    0.051282    -0.980203   0.205032    0.575739    0.213366    -0.367884   31
+# (114,127)(1778550,1778731)(1778550,1778650)   1   1778600 0.235098    0.097436    0.000001    0.005128    0.051282    -0.980203   0.205032    0.575739    0.213366    -0.367884   13
+# (127,146)(1778731,1778750)(1778650,1778750)   1   1778700 0.000504    0.000107    0.002142    0.000003    0.000055    -0.066506   -0.096080   -0.089562   0.006211    -0.021466   19
+
+#but a suitable input into GenomicRanges might look like this
+
+# ## thetaStat VERSION: 0.01 build:(Oct 23 2014,15:39:05)
+# #(indexStart,indexStop)(firstPos_withData,lastPos_withData)(WinStart,WinStop) Chr WinCenter   tW  tP  tF  tH  tL  Tajima  fuf fud fayh    zeng    nSites
+# 1 1778250 1778350 1778300 1.661604    0.550991    3.218805    1.968841    1.259916    -2.122087   -1.758895   -1.220118   -0.736941   -0.208055   28
+
+#where the first three columns are chr, start, stop.
+
+####
+# Read in the data
+####
+
+# open the input file
+
+open ( IN , &quot;&lt;$ARGV[0]&quot; ) || die &quot;could not open file:$!\n&quot;;
+
+####
+# Cycle through the file modifying each line
+####
+
+while ( &lt;IN&gt; )  {
+    if ( m/##/ ) {
+        print;
+        next
+    }
+    if ( m/#\(/ ) {
+        print &quot;chr  start   stop    WinCenter   tW  tP  tF  tH  tL  Tajima  fuf fud fayh    zeng    nSites\n&quot;;
+        next
+    }#if
+    chomp;
+    my @data = split &quot;\t&quot;;
+    # grab the start and stop of each window
+    $data[0] =~ m/\(\d+,\d+\)\(\d+,\d+\)\((\d+,\d+)\)/;
+    my $new = $1;
+    #replace a comma with tab
+    $new =~ s/,/\t/;
+    #print the new line as you want it.
+    print $data[1] , &quot;\t&quot; , $new , &quot;\t&quot; , join( &quot;\t&quot; , @data[2 .. $#data]) , &quot;\n&quot;;
+}#while
+
+exit;
+
+</code></pre>
+</div>
+<div id="unifiying-the-coverage-and-tajimad-datasets" class="section level2">
+<h2>Unifiying the coverage and Tajima’D datasets</h2>
 <p>Unfortunately not all windows are present in the resulting output (I think this is because not all windows have data) and so we need an additional few steps to make sure we keep the windows in order. To do this we can take advantge of the <code>GenomicRanges</code> package in R.</p>
+<p>First load in some libraries, the list of these can be expanded as we need them.</p>
+<pre class="r"><code>library(data.table)
+library(GenomicRanges)</code></pre>
+<pre><code>## Loading required package: BiocGenerics
+## Loading required package: parallel
+## 
+## Attaching package: 'BiocGenerics'
+## 
+## The following objects are masked from 'package:parallel':
+## 
+##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
+##     clusterExport, clusterMap, parApply, parCapply, parLapply,
+##     parLapplyLB, parRapply, parSapply, parSapplyLB
+## 
+## The following object is masked from 'package:stats':
+## 
+##     xtabs
+## 
+## The following objects are masked from 'package:base':
+## 
+##     anyDuplicated, append, as.data.frame, as.vector, cbind,
+##     colnames, do.call, duplicated, eval, evalq, Filter, Find, get,
+##     intersect, is.unsorted, lapply, Map, mapply, match, mget,
+##     order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+##     rbind, Reduce, rep.int, rownames, sapply, setdiff, sort,
+##     table, tapply, union, unique, unlist, unsplit
+## 
+## Loading required package: S4Vectors
+## Loading required package: stats4
+## Loading required package: IRanges
+## Loading required package: GenomeInfoDb</code></pre>
+<pre class="r"><code># now set the working dir
+setwd(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin&quot;)</code></pre>
+<p>Then we can unify the data.</p>
+<pre class="r"><code># load in the TD data
+td.data&lt;-fread(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/TD_windows_2000.txt&quot;)</code></pre>
+<pre><code>## 
+Read 17.5% of 1029793 rows
+Read 1029793 rows and 15 (of 15) columns from 0.112 GB file in 00:00:03</code></pre>
+<pre class="r"><code># turn into a GRanges object
+td.ranges&lt;-GRanges(seqnames=td.data$chr, ranges=IRanges(td.data$start,td.data$stop),td=td.data$Tajima)
+
+# load in the coverage data
+load(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/gc_normalized_2000bp.RData&quot;)
+gcNorm&lt;-chr6Coverage
+# turn into a GRanges object
+gcNorm&lt;-GRanges(seqnames=gcNorm$V1, ranges=IRanges(gcNorm$V2,gcNorm$V3))
+
+# do some clearing up
+chr6Coverage&lt;-NULL
+gc()</code></pre>
+<pre><code>##            used  (Mb) gc trigger  (Mb) max used  (Mb)
+## Ncells  1410705  75.4    2251281 120.3  1710298  91.4
+## Vcells 16271421 124.2   26573287 202.8 25026323 191.0</code></pre>
+<pre class="r"><code>###
+# Check for overlaps and unify the data
+###
+
+# first make a variable not modify, with NA values
+values(gcNorm)$td&lt;-NA
+# now check for overlaps, require &quot;equal&quot; because we want complete overlap
+overlaps&lt;-as.matrix(findOverlaps(gcNorm,td.ranges, type=&quot;equal&quot;))
+# use the hit matrix to add a value of TD to the coverage data set
+dim(overlaps)</code></pre>
+<pre><code>## [1] 1029793       2</code></pre>
+<pre class="r"><code>values(gcNorm)$td[overlaps[,1]]&lt;-td.ranges$td[overlaps[,2]]
+tail(gcNorm)</code></pre>
+<pre><code>## GRanges object with 6 ranges and 1 metadata column:
+##       seqnames                 ranges strand |        td
+##          &lt;Rle&gt;              &lt;IRanges&gt;  &lt;Rle&gt; | &lt;numeric&gt;
+##   [1]       10 [149622000, 149624000]      * |      &lt;NA&gt;
+##   [2]       10 [149624000, 149626000]      * |      &lt;NA&gt;
+##   [3]       10 [149626000, 149628000]      * |      &lt;NA&gt;
+##   [4]       10 [149628000, 149630000]      * |      &lt;NA&gt;
+##   [5]       10 [149630000, 149632000]      * |      &lt;NA&gt;
+##   [6]       10 [149632000, 149632204]      * |      &lt;NA&gt;
+##   -------
+##   seqinfo: 10 sequences from an unspecified genome; no seqlengths</code></pre>
 </div>
 
 

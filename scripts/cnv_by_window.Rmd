@@ -275,14 +275,42 @@ First load in some libraries, the list of these can be expanded as we need them.
 ```{r,warning=FALSE,messages=FALSE}
 library(data.table)
 library(GenomicRanges)
+
+# now set the working dir
+setwd("/Users/simonrenny-byfield/GitHubRepos/cnvwin")
 ```
 
 Then we can unify the data.
 
 ```{r,warning=FALSE}
 
+# load in the TD data
+td.data<-fread("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/TD_windows_2000.txt")
+# turn into a GRanges object
+td.ranges<-GRanges(seqnames=td.data$chr, ranges=IRanges(td.data$start,td.data$stop),td=td.data$Tajima)
 
+# load in the coverage data
+load("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/gc_normalized_2000bp.RData")
+gcNorm<-chr6Coverage
+# turn into a GRanges object
+gcNorm<-GRanges(seqnames=gcNorm$V1, ranges=IRanges(gcNorm$V2,gcNorm$V3))
 
+# do some clearing up
+chr6Coverage<-NULL
+gc()
+
+###
+# Check for overlaps and unify the data
+###
+
+# first make a variable not modify, with NA values
+values(gcNorm)$td<-NA
+# now check for overlaps, require "equal" because we want complete overlap
+overlaps<-as.matrix(findOverlaps(gcNorm,td.ranges, type="equal"))
+# use the hit matrix to add a value of TD to the coverage data set
+dim(overlaps)
+values(gcNorm)$td[overlaps[,1]]<-td.ranges$td[overlaps[,2]]
+tail(gcNorm)
 ```
 
 
