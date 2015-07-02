@@ -339,14 +339,16 @@ library(GenomicRanges)</code></pre>
 ## Loading required package: stats4
 ## Loading required package: IRanges
 ## Loading required package: GenomeInfoDb</code></pre>
-<pre class="r"><code># now set the working dir
+<pre class="r"><code>library(rtracklayer)
+
+# now set the working dir
 setwd(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin&quot;)</code></pre>
 <p>Then we can unify the data.</p>
 <pre class="r"><code># load in the TD data
 td.data&lt;-fread(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/TD_windows_2000.txt&quot;)</code></pre>
 <pre><code>## 
-Read 19.4% of 1029793 rows
-Read 1029793 rows and 15 (of 15) columns from 0.112 GB file in 00:00:03</code></pre>
+Read 0.0% of 1029793 rows
+Read 1029793 rows and 15 (of 15) columns from 0.112 GB file in 00:00:04</code></pre>
 <pre class="r"><code># turn into a GRanges object
 td.ranges&lt;-GRanges(seqnames=td.data$chr, ranges=IRanges(td.data$start,td.data$stop),td=td.data$Tajima)
 
@@ -370,20 +372,39 @@ values(gcNorm)$td[overlaps[,1]]&lt;-td.ranges$td[overlaps[,2]]
 #now turn in back into a datatable
 gcNorm&lt;-data.table(chr=as.vector(seqnames(gcNorm)),start=start(gcNorm),end=end(gcNorm),td=gcNorm$td)
 gcNorm&lt;-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
-head(gcNorm)</code></pre>
-<pre><code>##    chr start   end        td       V2       V3
-## 1:   1     0  2000        NA 1.892312 1.374510
-## 2:   1  2000  4000 -2.178054 4.929741 1.934306
-## 3:   1  4000  6000  0.716283 1.504926 1.313557
-## 4:   1  6000  8000  1.426310 2.716237 1.568899
-## 5:   1  8000 10000  1.247956 4.527048 1.972747
-## 6:   1 10000 12000  0.061225 5.487967 1.793503</code></pre>
-<pre class="r"><code># do some clearing up
+
+# do some clearing up
 chr6Coverage&lt;-NULL
 gc()</code></pre>
 <pre><code>##            used  (Mb) gc trigger  (Mb) max used  (Mb)
-## Ncells  1435200  76.7    2251281 120.3  2218140 118.5
-## Vcells 21460809 163.8   34357819 262.2 32954498 251.5</code></pre>
+## Ncells  2436555 130.2    3708127 198.1  3228732 172.5
+## Vcells 22085116 168.5   35555815 271.3 33758953 257.6</code></pre>
+</div>
+<div id="load-in-the-gene-annotation-data" class="section level2">
+<h2>Load in the gene annotation data</h2>
+<p>Now we have unified the coverage and Tajima’s D datasets we can now begin to load in the gene annotation data. Included with this will be the neccesary maize1 and maize2 data.</p>
+<pre class="r"><code># load in the annotation data
+gff&lt;-fread(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/AGPv3.22_primary_transcripts.bed&quot;)
+gff&lt;-GRanges(seqnames=gff$V1, ranges=IRanges(gff$V2,gff$V3),name=gff$V4)
+# remove scaffolds
+gff&lt;-subset(gff,subset=seqnames %in% c(1:10))
+head(gff)</code></pre>
+<pre><code>## GRanges object with 6 ranges and 1 metadata column:
+##       seqnames           ranges strand |            name
+##          &lt;Rle&gt;        &lt;IRanges&gt;  &lt;Rle&gt; |     &lt;character&gt;
+##   [1]       10 [300326, 300886]      * |            exon
+##   [2]       10 [300326, 300577]      * | three_prime_UTR
+##   [3]       10 [300578, 300886]      * |             CDS
+##   [4]       10 [301112, 301160]      * |             CDS
+##   [5]       10 [301112, 301160]      * |            exon
+##   [6]       10 [301253, 301746]      * |             CDS
+##   -------
+##   seqinfo: 130 sequences from an unspecified genome; no seqlengths</code></pre>
+<pre class="r"><code>#sub.genome&lt;-rep(&quot;no syn&quot;, dim(gcNorm)[1])
+# attribute to the gcNorm table
+#gcNorm&lt;-gcNorm[,sub.genome:=sub.genome]
+# load in the subgenome info
+#subGenomes&lt;-read.csv(&quot;/Users/simonrenny-byfield/GitHubRepos/custom_cnv/data/gene_by_sugenome.csv&quot;,na.strings=c(&quot;&quot;,&quot;.&quot;,&quot;NA&quot;))</code></pre>
 </div>
 
 

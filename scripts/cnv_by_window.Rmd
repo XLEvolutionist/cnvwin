@@ -275,6 +275,7 @@ First load in some libraries, the list of these can be expanded as we need them.
 ```{r,warning=FALSE,messages=FALSE}
 library(data.table)
 library(GenomicRanges)
+library(rtracklayer)
 
 # now set the working dir
 setwd("/Users/simonrenny-byfield/GitHubRepos/cnvwin")
@@ -306,15 +307,34 @@ overlaps<-as.matrix(findOverlaps(gcNorm,td.ranges, type="equal"))
 # use the hit matrix to add a value of TD to the coverage data set
 values(gcNorm)$td[overlaps[,1]]<-td.ranges$td[overlaps[,2]]
 
-#now turn in back into a datatable
+# now turn in back into a datatable
 gcNorm<-data.table(chr=as.vector(seqnames(gcNorm)),start=start(gcNorm),end=end(gcNorm),td=gcNorm$td)
 gcNorm<-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
-head(gcNorm)
+
 # do some clearing up
 chr6Coverage<-NULL
 gc()
-
 ```
 
+## Load in the gene annotation data
+
+Now we have unified the coverage and Tajima's D datasets we can now begin to load in the gene annotation data. Included with this will be the neccesary maize1 and maize2 data.
+
+```{r}
+# load in the annotation data
+gff<-fread("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/AGPv3.22_primary_transcripts.bed")
+gff<-GRanges(seqnames=gff$V1, ranges=IRanges(gff$V2,gff$V3),name=gff$V4)
+# remove scaffolds
+gff<-subset(gff,subset=seqnames %in% c(1:10))
+
+# prepare the GRanges object to receive the sub-genome info
+values(gff)$sub.genome<-"no syn"
+# load in the maize1 maize 2 subgenomes info
+subGenomes<-read.csv("/Users/simonrenny-byfield/GitHubRepos/custom_cnv/data/gene_by_sugenome.csv",na.strings=c("",".","NA"))
+# attribute the correct sub-genome to each annotation
+values(gff)$sub.genome[gff$name %in% subGenomes[,1]]<-"M1"
+values(gff)$sub.genome[gff$name %in% subGenomes[,2]]<-"M2"
+
+```
 
 
