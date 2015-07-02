@@ -310,36 +310,9 @@ exit;
 <p>Unfortunately not all windows are present in the resulting output (I think this is because not all windows have data) and so we need an additional few steps to make sure we keep the windows in order. To do this we can take advantge of the <code>GenomicRanges</code> package in R.</p>
 <p>First load in some libraries, the list of these can be expanded as we need them.</p>
 <pre class="r"><code>library(data.table)
-library(GenomicRanges)</code></pre>
-<pre><code>## Loading required package: BiocGenerics
-## Loading required package: parallel
-## 
-## Attaching package: 'BiocGenerics'
-## 
-## The following objects are masked from 'package:parallel':
-## 
-##     clusterApply, clusterApplyLB, clusterCall, clusterEvalQ,
-##     clusterExport, clusterMap, parApply, parCapply, parLapply,
-##     parLapplyLB, parRapply, parSapply, parSapplyLB
-## 
-## The following object is masked from 'package:stats':
-## 
-##     xtabs
-## 
-## The following objects are masked from 'package:base':
-## 
-##     anyDuplicated, append, as.data.frame, as.vector, cbind,
-##     colnames, do.call, duplicated, eval, evalq, Filter, Find, get,
-##     intersect, is.unsorted, lapply, Map, mapply, match, mget,
-##     order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
-##     rbind, Reduce, rep.int, rownames, sapply, setdiff, sort,
-##     table, tapply, union, unique, unlist, unsplit
-## 
-## Loading required package: S4Vectors
-## Loading required package: stats4
-## Loading required package: IRanges
-## Loading required package: GenomeInfoDb</code></pre>
-<pre class="r"><code>library(rtracklayer)
+library(GenomicRanges)
+library(rtracklayer)
+library(scales)
 
 # now set the working dir
 setwd(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin&quot;)</code></pre>
@@ -369,7 +342,7 @@ overlaps&lt;-as.matrix(findOverlaps(gcNorm,td.ranges, type=&quot;equal&quot;))
 # use the hit matrix to add a value of TD to the coverage data set
 values(gcNorm)$td[overlaps[,1]]&lt;-td.ranges$td[overlaps[,2]]
 
-#now turn in back into a datatable
+# now turn in back into a datatable
 gcNorm&lt;-data.table(chr=as.vector(seqnames(gcNorm)),start=start(gcNorm),end=end(gcNorm),td=gcNorm$td)
 gcNorm&lt;-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
 
@@ -377,8 +350,8 @@ gcNorm&lt;-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
 chr6Coverage&lt;-NULL
 gc()</code></pre>
 <pre><code>##            used  (Mb) gc trigger  (Mb) max used  (Mb)
-## Ncells  2436555 130.2    3708127 198.1  3228732 172.5
-## Vcells 22085116 168.5   35555815 271.3 33758953 257.6</code></pre>
+## Ncells  2473018 132.1    3708127 198.1  3265190 174.4
+## Vcells 22109607 168.7   33819303 258.1 33454806 255.3</code></pre>
 </div>
 <div id="load-in-the-gene-annotation-data" class="section level2">
 <h2>Load in the gene annotation data</h2>
@@ -388,23 +361,43 @@ gff&lt;-fread(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/AGPv3.22_p
 gff&lt;-GRanges(seqnames=gff$V1, ranges=IRanges(gff$V2,gff$V3),name=gff$V4)
 # remove scaffolds
 gff&lt;-subset(gff,subset=seqnames %in% c(1:10))
-head(gff)</code></pre>
-<pre><code>## GRanges object with 6 ranges and 1 metadata column:
-##       seqnames           ranges strand |            name
-##          &lt;Rle&gt;        &lt;IRanges&gt;  &lt;Rle&gt; |     &lt;character&gt;
-##   [1]       10 [300326, 300886]      * |            exon
-##   [2]       10 [300326, 300577]      * | three_prime_UTR
-##   [3]       10 [300578, 300886]      * |             CDS
-##   [4]       10 [301112, 301160]      * |             CDS
-##   [5]       10 [301112, 301160]      * |            exon
-##   [6]       10 [301253, 301746]      * |             CDS
-##   -------
-##   seqinfo: 130 sequences from an unspecified genome; no seqlengths</code></pre>
-<pre class="r"><code>#sub.genome&lt;-rep(&quot;no syn&quot;, dim(gcNorm)[1])
-# attribute to the gcNorm table
-#gcNorm&lt;-gcNorm[,sub.genome:=sub.genome]
-# load in the subgenome info
-#subGenomes&lt;-read.csv(&quot;/Users/simonrenny-byfield/GitHubRepos/custom_cnv/data/gene_by_sugenome.csv&quot;,na.strings=c(&quot;&quot;,&quot;.&quot;,&quot;NA&quot;))</code></pre>
+
+# prepare the GRanges object to receive the sub-genome info
+values(gff)$sub.genome&lt;-&quot;no syn&quot;
+# load in the maize1 maize 2 subgenomes info
+subGenomes&lt;-read.csv(&quot;/Users/simonrenny-byfield/GitHubRepos/custom_cnv/data/gene_by_sugenome.csv&quot;,na.strings=c(&quot;&quot;,&quot;.&quot;,&quot;NA&quot;))
+# attribute the correct sub-genome to each annotation
+values(gff)$sub.genome[gff$name %in% subGenomes[,1]]&lt;-&quot;M1&quot;
+values(gff)$sub.genome[gff$name %in% subGenomes[,2]]&lt;-&quot;M2&quot;</code></pre>
+</div>
+<div id="add-samples-names-to-the-dataset" class="section level2">
+<h2>Add samples names to the dataset</h2>
+<pre class="r"><code>samples&lt;-c(&quot;B73&quot;,&quot;test&quot;)
+colnames(gcNorm)[-c(1:4)]&lt;-samples
+head(gcNorm)</code></pre>
+<pre><code>##    chr start   end        td      B73     test
+## 1:   1     0  2000        NA 1.892312 1.374510
+## 2:   1  2000  4000 -2.178054 4.929741 1.934306
+## 3:   1  4000  6000  0.716283 1.504926 1.313557
+## 4:   1  6000  8000  1.426310 2.716237 1.568899
+## 5:   1  8000 10000  1.247956 4.527048 1.972747
+## 6:   1 10000 12000  0.061225 5.487967 1.793503</code></pre>
+</div>
+<div id="filtering-the-data" class="section level2">
+<h2>Filtering the data</h2>
+<p>Before we start, it might be a good idea to screen out windows that have really high coverage in B73, these are likely to represent repeatitive or poorly assembled region of the genome and should be excluded from further consideration.</p>
+<pre class="r"><code>#set the max read depth
+maxDepth&lt;-10
+gcNorm&lt;-subset(gcNorm,subset=gcNorm$B73 &lt; maxDepth)</code></pre>
+<pre class="r"><code>source(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R&quot;)
+test&lt;-callCNV(gcNorm,samples,limit=1.2,limitHom=6)</code></pre>
+<p>Next, the best thing to do it to calculate the allele frequencies based on the genotype calls. We can do this using an apply function over the <code>gcNorm</code> table, using <code>sum</code> as a function. Later we can trim the CNVs we want by looking at only those with exclusively up, or down calls etc. At this stage:</p>
+<ul>
+<li>0 is equivalent to homozygous for a deletion.</li>
+<li>1 is equivalent heterozygous for a deletion.</li>
+<li>2 is normal.</li>
+<li>3 is more than two copies of a region.</li>
+</ul>
 </div>
 
 
