@@ -295,10 +295,6 @@ gcNorm<-chr6Coverage
 # turn into a GRanges object
 gcNorm<-GRanges(seqnames=gcNorm$V1, ranges=IRanges(gcNorm$V2,gcNorm$V3))
 
-# do some clearing up
-chr6Coverage<-NULL
-gc()
-
 ###
 # Check for overlaps and unify the data
 ###
@@ -308,9 +304,16 @@ values(gcNorm)$td<-NA
 # now check for overlaps, require "equal" because we want complete overlap
 overlaps<-as.matrix(findOverlaps(gcNorm,td.ranges, type="equal"))
 # use the hit matrix to add a value of TD to the coverage data set
-dim(overlaps)
 values(gcNorm)$td[overlaps[,1]]<-td.ranges$td[overlaps[,2]]
-tail(gcNorm)
+
+#now turn in back into a datatable
+gcNorm<-data.table(chr=as.vector(seqnames(gcNorm)),start=start(gcNorm),end=end(gcNorm),td=gcNorm$td)
+gcNorm<-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
+head(gcNorm)
+# do some clearing up
+chr6Coverage<-NULL
+gc()
+
 ```
 
 

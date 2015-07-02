@@ -345,7 +345,7 @@ setwd(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin&quot;)</code></pre>
 <pre class="r"><code># load in the TD data
 td.data&lt;-fread(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/TD_windows_2000.txt&quot;)</code></pre>
 <pre><code>## 
-Read 17.5% of 1029793 rows
+Read 19.4% of 1029793 rows
 Read 1029793 rows and 15 (of 15) columns from 0.112 GB file in 00:00:03</code></pre>
 <pre class="r"><code># turn into a GRanges object
 td.ranges&lt;-GRanges(seqnames=td.data$chr, ranges=IRanges(td.data$start,td.data$stop),td=td.data$Tajima)
@@ -356,13 +356,7 @@ gcNorm&lt;-chr6Coverage
 # turn into a GRanges object
 gcNorm&lt;-GRanges(seqnames=gcNorm$V1, ranges=IRanges(gcNorm$V2,gcNorm$V3))
 
-# do some clearing up
-chr6Coverage&lt;-NULL
-gc()</code></pre>
-<pre><code>##            used  (Mb) gc trigger  (Mb) max used  (Mb)
-## Ncells  1410705  75.4    2251281 120.3  1710298  91.4
-## Vcells 16271421 124.2   26573287 202.8 25026323 191.0</code></pre>
-<pre class="r"><code>###
+###
 # Check for overlaps and unify the data
 ###
 
@@ -371,21 +365,25 @@ values(gcNorm)$td&lt;-NA
 # now check for overlaps, require &quot;equal&quot; because we want complete overlap
 overlaps&lt;-as.matrix(findOverlaps(gcNorm,td.ranges, type=&quot;equal&quot;))
 # use the hit matrix to add a value of TD to the coverage data set
-dim(overlaps)</code></pre>
-<pre><code>## [1] 1029793       2</code></pre>
-<pre class="r"><code>values(gcNorm)$td[overlaps[,1]]&lt;-td.ranges$td[overlaps[,2]]
-tail(gcNorm)</code></pre>
-<pre><code>## GRanges object with 6 ranges and 1 metadata column:
-##       seqnames                 ranges strand |        td
-##          &lt;Rle&gt;              &lt;IRanges&gt;  &lt;Rle&gt; | &lt;numeric&gt;
-##   [1]       10 [149622000, 149624000]      * |      &lt;NA&gt;
-##   [2]       10 [149624000, 149626000]      * |      &lt;NA&gt;
-##   [3]       10 [149626000, 149628000]      * |      &lt;NA&gt;
-##   [4]       10 [149628000, 149630000]      * |      &lt;NA&gt;
-##   [5]       10 [149630000, 149632000]      * |      &lt;NA&gt;
-##   [6]       10 [149632000, 149632204]      * |      &lt;NA&gt;
-##   -------
-##   seqinfo: 10 sequences from an unspecified genome; no seqlengths</code></pre>
+values(gcNorm)$td[overlaps[,1]]&lt;-td.ranges$td[overlaps[,2]]
+
+#now turn in back into a datatable
+gcNorm&lt;-data.table(chr=as.vector(seqnames(gcNorm)),start=start(gcNorm),end=end(gcNorm),td=gcNorm$td)
+gcNorm&lt;-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
+head(gcNorm)</code></pre>
+<pre><code>##    chr start   end        td       V2       V3
+## 1:   1     0  2000        NA 1.892312 1.374510
+## 2:   1  2000  4000 -2.178054 4.929741 1.934306
+## 3:   1  4000  6000  0.716283 1.504926 1.313557
+## 4:   1  6000  8000  1.426310 2.716237 1.568899
+## 5:   1  8000 10000  1.247956 4.527048 1.972747
+## 6:   1 10000 12000  0.061225 5.487967 1.793503</code></pre>
+<pre class="r"><code># do some clearing up
+chr6Coverage&lt;-NULL
+gc()</code></pre>
+<pre><code>##            used  (Mb) gc trigger  (Mb) max used  (Mb)
+## Ncells  1435200  76.7    2251281 120.3  2218140 118.5
+## Vcells 21460809 163.8   34357819 262.2 32954498 251.5</code></pre>
 </div>
 
 
