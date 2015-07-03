@@ -310,7 +310,8 @@ values(gcNorm)$td[overlaps[,1]]<-td.ranges$td[overlaps[,2]]
 
 # now turn in back into a datatable
 gcNorm<-data.table(chr=as.vector(seqnames(gcNorm)),start=start(gcNorm),end=end(gcNorm),td=gcNorm$td)
-gcNorm<-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
+#remove the positional info and the gc info
+gcNorm<-cbind(gcNorm,chr6Coverage[-c(1:3,26)])
 
 # do some clearing up
 chr6Coverage<-NULL
@@ -341,9 +342,9 @@ values(gff)$sub.genome[gff$name %in% subGenomes[,2]]<-"M2"
 ## Add samples names to the dataset
 
 ```{r,warning=FALSE,message=FALSE}
-samples<-c("B73","test")
+samples<-read.table("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/sample_list.txt")
+samples<-as.vector(gsub(".sorted.bam","",samples$V1))
 setnames(gcNorm,colnames(gcNorm),c(colnames(gcNorm)[1:4],samples))
-head(gcNorm)
 ```
 
 ## Filtering the data
@@ -361,9 +362,9 @@ gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
 ## Runnig the CNV calling function
 
-```{r, message=FALSE,warning=FALSE}
+```{r, message=FALSE,warning=FALSE,results='hide'}
 source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R")
-test<-callCNV(gcNorm,samples,limit=1,limitHom=2)
+cnvs<-callCNV(gcNorm,samples,limit=1,limitHom=2)
 dev.off()
 # take a look at the genic region in terms of coverage
     cov<-GRanges(seqnames=gcNorm$chr, ranges=IRanges(gcNorm$start,gcNorm$end),coverage=subset(gcNorm,select="B73"))
@@ -371,7 +372,10 @@ dev.off()
     geneData<-subsetByOverlaps(cov,gff,type = "within")
 ```
 
+```{r,message=FALSE,warning=FALSE}
+head(cnvs$cnvs)
 
+```
 Next, the best thing to do it to calculate the allele frequencies based on the genotype calls. We can do this using an apply function over the `gcNorm` table, using `sum` as a function. Later we can trim the CNVs we want by looking at only those with exclusively up, or down calls etc. At this stage:
 
 * 0 is equivalent to homozygous for a deletion.
