@@ -59,7 +59,7 @@ windows=(500 1000 2000)
 echo "Starting Job:"
 date
 
-cmd="Rscript ../scripts/gcNorm_sim.R window_${windows[$SLURM_ARRAY_TASK_ID]}bp_coverage.txt window_${windows[$SLURM_ARRAY_TASK_ID]}bp_GC.txt gc_normalized_${windows[$SLURM_ARRAY_TASK_ID]}bp.RData"
+cmd="Rscript ../scripts/gcNorm_sim.R window_${windows[$SLURM_ARRAY_TASK_ID]}bp_coverage.txt window_${windows[$SLURM_ARRAY_TASK_ID]}bp_GC.txt gc_normalized_${windows[$SLURM_ARRAY_TASK_ID]}bp_median.RData"
 echo $cmd
 eval $cmd
 
@@ -101,7 +101,7 @@ ch6_gc<-read.table(args[2])
 gc<-ch6_gc$V5
 norm.df<-data.matrix(norm.df)
 # now try to normalize the data according to GC content
-chr6Coverage<-withinLaneNormalization(x=norm.df, y=gc, which="loess", round=FALSE)
+chr6Coverage<-withinLaneNormalization(x=norm.df, y=gc, which="median", round=FALSE)
 # modify make a new data.table of the gc normalized counts
 chr6Coverage<-data.table(chr6Coverage)
 chr6Coverage<-cbind(chr6cov[,1:3],chr6Coverage,gc)
@@ -292,7 +292,7 @@ td.data<-fread("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/TD_windows_200
 td.ranges<-GRanges(seqnames=td.data$chr, ranges=IRanges(td.data$start,td.data$stop),td=td.data$Tajima)
 
 # load in the coverage data
-load("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/gc_normalized_2000bp.RData")
+load("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/gc_normalized_2000bp_median.RData")
 gcNorm<-chr6Coverage
 # turn into a GRanges object
 gcNorm<-GRanges(seqnames=gcNorm$V1, ranges=IRanges(gcNorm$V2,gcNorm$V3))
@@ -352,15 +352,23 @@ Before we start, it might be a good idea to screen out windows that have really 
 
 ```{r,warning=FALSE,message=FALSE}
 #set the max read depth
-maxDepth<-10
-gcNorm<-subset(gcNorm,subset=gcNorm$B73 < maxDepth)
+maxDepth<-15
+minDepth<-1
+gcNorm<-subset(gcNorm,subset=gcNorm$B73 < maxDepth )
+gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
 ```
 
+## Runnig the CNV calling function
 
 ```{r, message=FALSE,warning=FALSE}
 source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R")
-test<-callCNV(gcNorm,samples,limit=1.2,limitHom=6)
+test<-callCNV(gcNorm,samples,limit=1,limitHom=2)
+dev.off()
+# take a look at the genic region in terms of coverage
+    cov<-GRanges(seqnames=gcNorm$chr, ranges=IRanges(gcNorm$start,gcNorm$end),coverage=subset(gcNorm,select="B73"))
+    # check for overlaps between gcNorm and gff
+    geneData<-subsetByOverlaps(cov,gff,type = "within")
 ```
 
 

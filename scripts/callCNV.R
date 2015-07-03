@@ -1,5 +1,5 @@
 
-callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
+callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6,geneRanges=gff){
   
   # make a matrix of 0, representing the "no evidence of change in copy-number"
   cnv.mat<-matrix(data=2,nrow=dim(gcNorm)[1],ncol=length(samples))
@@ -23,9 +23,10 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     sub.df<-subset(gcNorm,select=c(s))
     sub.df<-data.frame(sub.df)
     # print(head(sub.df))
-    hist(sub.df[,s], main =paste0(s, " read-depth"),
-       xlab="normalized coverage per kb",cex.lab=1.4, breaks = c(seq(0,20,0.2),20.00001,max(sub.df[,s])), xlim=c(0,21), 
+    p1<-hist(sub.df[,s], main =paste0(s, " read-depth"),
+       xlab="normalized coverage per kb",cex.lab=1.4,  
        col = alpha("cornflowerblue",0.5),border=alpha("cornflowerblue",0.7))
+    #breaks = c(seq(0,20,0.2),20.00001,max(sub.df[,s])), xlim=c(0,21),
     # calculate the ratio between sample and reference"
     ratio<-sub.df[,s]/subset(gcNorm,select=ref)
     ratio<-data.matrix(ratio)
@@ -36,7 +37,7 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     d<-(mean(ratio)-ratio)
     # lower tail might not be correct
     # plot the ratio as a histogram
-    hist(ratio, main=paste0(s," ratio (sample/ref)"),
+    p2<-hist(ratio, main=paste0(s," ratio (sample/ref)"),
        cex.lab=1.4, xlab="log(coverage difference (sample/ref))", col=alpha("cornflowerblue",0.4),
        border=alpha("cornflowerblue",0.4), breaks=200)
     # calculate the CNV "limit
@@ -70,7 +71,9 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     #now the qvalue
     qVal<-pnorm(q=d,mean=0,sd=stdev)
     q.mat[,sName:=-log(qVal),with=FALSE]
+    print(p1)
+    print(p2)
   }
   dev.off()
-  output<-list(cnvs=gcNorm,q.mat=q.mat)
+  output<-list(cnvs=gcNorm,q.mat=q.mat, geneData=geneData)
 }# function callCNV()

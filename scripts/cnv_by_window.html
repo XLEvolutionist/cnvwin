@@ -114,7 +114,7 @@ windows=(500 1000 2000)
 echo &quot;Starting Job:&quot;
 date
 
-cmd=&quot;Rscript ../scripts/gcNorm_sim.R window_${windows[$SLURM_ARRAY_TASK_ID]}bp_coverage.txt window_${windows[$SLURM_ARRAY_TASK_ID]}bp_GC.txt gc_normalized_${windows[$SLURM_ARRAY_TASK_ID]}bp.RData&quot;
+cmd=&quot;Rscript ../scripts/gcNorm_sim.R window_${windows[$SLURM_ARRAY_TASK_ID]}bp_coverage.txt window_${windows[$SLURM_ARRAY_TASK_ID]}bp_GC.txt gc_normalized_${windows[$SLURM_ARRAY_TASK_ID]}bp_median.RData&quot;
 echo $cmd
 eval $cmd
 
@@ -152,7 +152,7 @@ ch6_gc&lt;-read.table(args[2])
 gc&lt;-ch6_gc$V5
 norm.df&lt;-data.matrix(norm.df)
 # now try to normalize the data according to GC content
-chr6Coverage&lt;-withinLaneNormalization(x=norm.df, y=gc, which=&quot;loess&quot;, round=FALSE)
+chr6Coverage&lt;-withinLaneNormalization(x=norm.df, y=gc, which=&quot;median&quot;, round=FALSE)
 # modify make a new data.table of the gc normalized counts
 chr6Coverage&lt;-data.table(chr6Coverage)
 chr6Coverage&lt;-cbind(chr6cov[,1:3],chr6Coverage,gc)
@@ -326,7 +326,7 @@ Read 1029793 rows and 15 (of 15) columns from 0.112 GB file in 00:00:04</code></
 td.ranges&lt;-GRanges(seqnames=td.data$chr, ranges=IRanges(td.data$start,td.data$stop),td=td.data$Tajima)
 
 # load in the coverage data
-load(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/gc_normalized_2000bp.RData&quot;)
+load(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/chr_norm_coverage.RData&quot;)
 gcNorm&lt;-chr6Coverage
 # turn into a GRanges object
 gcNorm&lt;-GRanges(seqnames=gcNorm$V1, ranges=IRanges(gcNorm$V2,gcNorm$V3))
@@ -350,8 +350,8 @@ gcNorm&lt;-cbind(gcNorm,chr6Coverage$V4,chr6Coverage$V5)
 chr6Coverage&lt;-NULL
 gc()</code></pre>
 <pre><code>##            used  (Mb) gc trigger  (Mb) max used  (Mb)
-## Ncells  2473018 132.1    3708127 198.1  3265190 174.4
-## Vcells 22109607 168.7   33819303 258.1 33454806 255.3</code></pre>
+## Ncells  2473017 132.1    3708127 198.1  3270025 174.7
+## Vcells 22109630 168.7   38488892 293.7 36547279 278.9</code></pre>
 </div>
 <div id="load-in-the-gene-annotation-data" class="section level2">
 <h2>Load in the gene annotation data</h2>
@@ -373,7 +373,7 @@ values(gff)$sub.genome[gff$name %in% subGenomes[,2]]&lt;-&quot;M2&quot;</code></
 <div id="add-samples-names-to-the-dataset" class="section level2">
 <h2>Add samples names to the dataset</h2>
 <pre class="r"><code>samples&lt;-c(&quot;B73&quot;,&quot;test&quot;)
-colnames(gcNorm)[-c(1:4)]&lt;-samples
+setnames(gcNorm,colnames(gcNorm),c(colnames(gcNorm)[1:4],samples))
 head(gcNorm)</code></pre>
 <pre><code>##    chr start   end        td      B73     test
 ## 1:   1     0  2000        NA 1.892312 1.374510
@@ -387,10 +387,12 @@ head(gcNorm)</code></pre>
 <h2>Filtering the data</h2>
 <p>Before we start, it might be a good idea to screen out windows that have really high coverage in B73, these are likely to represent repeatitive or poorly assembled region of the genome and should be excluded from further consideration.</p>
 <pre class="r"><code>#set the max read depth
-maxDepth&lt;-10
-gcNorm&lt;-subset(gcNorm,subset=gcNorm$B73 &lt; maxDepth)</code></pre>
+maxDepth&lt;-5
+minDepth&lt;-0.25
+gcNorm&lt;-subset(gcNorm,subset=gcNorm$B73 &lt; maxDepth )
+gcNorm&lt;-subset(gcNorm, subset= gcNorm$B73 &gt; minDepth)</code></pre>
 <pre class="r"><code>source(&quot;/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R&quot;)
-test&lt;-callCNV(gcNorm,samples,limit=1.2,limitHom=6)</code></pre>
+test&lt;-callCNV(gcNorm,samples,limit=1,limitHom=2)</code></pre>
 <p>Next, the best thing to do it to calculate the allele frequencies based on the genotype calls. We can do this using an apply function over the <code>gcNorm</code> table, using <code>sum</code> as a function. Later we can trim the CNVs we want by looking at only those with exclusively up, or down calls etc. At this stage:</p>
 <ul>
 <li>0 is equivalent to homozygous for a deletion.</li>
