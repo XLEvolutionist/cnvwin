@@ -1,5 +1,5 @@
 
-callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6,geneRanges=gff){
+callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
   
   # make a matrix of 0, representing the "no evidence of change in copy-number"
   cnv.mat<-matrix(data=2,nrow=dim(gcNorm)[1],ncol=length(samples))
@@ -75,5 +75,5 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6,geneRanges=gff){
     print(p2)
   }
   dev.off()
-  output<-list(cnvs=gcNorm,q.mat=q.mat, geneData=geneData)
+  output<-list(cnvs=gcNorm,q.mat=q.mat)
 }# function callCNV()
