@@ -364,21 +364,71 @@ gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
 ```{r, message=FALSE,warning=FALSE,results='hide'}
 source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R")
-cnvs<-callCNV(gcNorm,samples,limit=1,limitHom=2)
+cnvs<-callCNV(gcNorm,samples,limit=1.4,limitHom=4)
 dev.off()
 # take a look at the genic region in terms of coverage
-    cov<-GRanges(seqnames=gcNorm$chr, ranges=IRanges(gcNorm$start,gcNorm$end),coverage=subset(gcNorm,select="B73"))
-    # check for overlaps between gcNorm and gff
-    geneData<-subsetByOverlaps(cov,gff,type = "within")
+cov<-GRanges(seqnames=gcNorm$chr, ranges=IRanges(gcNorm$start,gcNorm$end),coverage=subset(gcNorm,select="B73"))
+# check for overlaps between gcNorm and gff
+geneData<-subsetByOverlaps(cov,gff,type = "within")
+
 ```
 
 ```{r,message=FALSE,warning=FALSE}
-head(cnvs$cnvs)
-
+hist(geneData$coverage.B73, breaks = 40)
 ```
+
 Next, the best thing to do it to calculate the allele frequencies based on the genotype calls. We can do this using an apply function over the `gcNorm` table, using `sum` as a function. Later we can trim the CNVs we want by looking at only those with exclusively up, or down calls etc. At this stage:
 
 * 0 is equivalent to homozygous for a deletion.
 * 1 is equivalent heterozygous for a deletion.
 * 2 is normal.
 * 3 is more than two copies of a region.
+
+```{r,message=FALSE,warning=FALSE}
+# re-attribute the gcNorm data frame
+gcNorm<-cnvs$cnvs
+# remove the strange sample 
+gcNorm<-gcNorm[,JRIAL2T:=NULL]
+gcNorm<-gcNorm[,JRIAL2T_CNV:=NULL]
+freqs<-apply(subset(gcNorm,select=c(27:45)), 1 , function(x) sum(x))
+# add a new column to the gcNorm table, note this is the frequency of the DNA segment
+gcNorm<-gcNorm[,freq:=freqs]
+```
+
+## Examinig "Down" CNVs: SFS vs SNPS
+
+We probably want to focus on only those regions of the genome that have been called as "down" copy-number variants. These are regions that appear to be in lower copy number in one or more of the Palmar Chico individuals when compared with the reference B73.
+
+```{r}
+#now try to look at the 'down' CNV
+downGroup<-gcNorm[apply(subset(gcNorm,select=c(27:47)),1,function(x) !all(x == 2) & !any(x==3) ),]
+# calculate the sfs for deletion
+propVariantSites<-rev(table(downGroup$freq)/sum(table(downGroup$freq)))
+propVariantSites<-propVariantSites[-38]
+# do it for a folded SFSs
+#min(p,38-p)
+
+
+#load in the snp sfs data
+SNPsfs<-exp(scan("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/teosinte19.sfs"))
+SNPsfs<-SNPsfs[-c(1,length(SNPsfs))]# removed fixed classes
+SNPsfs<-(SNPsfs/sum(SNPsfs))
+
+# calculate the folded SFSs for down CNVs
+alleleDiff<-38-downGroup$freq
+d<-cbind(alleleDiff,downGroup$freq)
+MAF<-apply(d,1,min)
+foldedPropVariantsSites<-table(MAF)/sum(table(MAF)
+
+# plot the SFSs
+b<-barplot(rbind(SNPsfs,c(propVariantSites)),beside=TRUE, col = c("darkolivegreen4","red"), xlab="frequency",
+          ylab="proportion of variant sites", xaxt="n", cex.axis=1.4, cex.lab=1.4)
+Axlabel<-c(1,5,10,15,20,25,30,35)
+AxAt<-(b[1,]+b[2,])/2
+AxAt<-AxAt[seq(1,length(AxAt),by=5)]
+axis(1,at=AxAt,labels=Axlabel,cex.axis=1.4)
+legend("topright", legend=c("SNPs","down CNVs"), pch=15, col=c("darkolivegreen4","red"), cex=1.5, bty="n")
+
+
+# Make a folded SNP SFSs
+```

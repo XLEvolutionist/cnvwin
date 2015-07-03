@@ -24,9 +24,9 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     sub.df<-data.frame(sub.df)
     # print(head(sub.df))
     p1<-hist(sub.df[,s], main =paste0(s, " read-depth"),
-       xlab="normalized coverage per kb",cex.lab=1.4,  
+       xlab="normalized coverage per kb",cex.lab=1.4, breaks = c(seq(0,20,0.2),20.00001,max(sub.df[,s])), xlim=c(0,21), 
        col = alpha("cornflowerblue",0.5),border=alpha("cornflowerblue",0.7))
-    #breaks = c(seq(0,20,0.2),20.00001,max(sub.df[,s])), xlim=c(0,21),
+    #
     # calculate the ratio between sample and reference"
     ratio<-sub.df[,s]/subset(gcNorm,select=ref)
     ratio<-data.matrix(ratio)
