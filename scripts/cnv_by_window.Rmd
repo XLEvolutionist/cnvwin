@@ -5,6 +5,24 @@ date: "July 1, 2015"
 output: html_document
 ---
 
+```{r,echo=FALSE,message=FALSE,warning=FALSE}
+# load some useful libraries
+library(data.table)
+library(ggplot2)
+library(reshape2)
+library(EDASeq)
+library(grid)
+
+####
+# Define some useful available
+####
+
+a.size<-26
+m.size<-0.32
+
+```
+
+
 The purpose of the document is to detail the analysis of CNV over windows across the genome. In this case the approach is similar to that detailed in `custom_cnv_v2.Rmd` in that it uses a z-score (e.g. standard deviations away from the mean) and the difference in read-depth between the sample and a reference genome (in this case B73). As such, it borrows heavily from the code employed in `custom_cnv_v2.Rmd`, with some slight modificartions.
 
 ##Generating the coverage data
@@ -79,12 +97,6 @@ This scripts calls an `R` script which utilizes the `EDASeq` package and looks l
 options(echo=TRUE) # if you want see commands in output file
 args <- commandArgs(trailingOnly = TRUE)
 print(args)
-
-# load some useful libraries
-library(data.table)
-library(ggplot2)
-library(reshape2)
-library(EDASeq)
 
 # load in the data
 chr6cov<-read.table(args[1])
@@ -277,6 +289,7 @@ library(data.table)
 library(GenomicRanges)
 library(rtracklayer)
 library(scales)
+library(ggplot2)
 
 # now set the working dir
 setwd("/Users/simonrenny-byfield/GitHubRepos/cnvwin")
@@ -325,7 +338,7 @@ Now we have unified the coverage and Tajima's D datasets we can now begin to loa
 ```{r}
 # load in the annotation data
 gff<-fread("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/AGPv3.22_primary_transcripts.bed")
-gff<-GRanges(seqnames=gff$V1, ranges=IRanges(gff$V2,gff$V3),name=gff$V4)
+gff<-GRanges(seqnames=gff$V1, ranges=IRanges(gff$V2,gff$V3),type=gff$V4,name=gff$V5)
 # remove scaffolds
 gff<-subset(gff,subset=seqnames %in% c(1:10))
 
@@ -334,8 +347,8 @@ values(gff)$sub.genome<-"no syn"
 # load in the maize1 maize 2 subgenomes info
 subGenomes<-read.csv("/Users/simonrenny-byfield/GitHubRepos/custom_cnv/data/gene_by_sugenome.csv",na.strings=c("",".","NA"))
 # attribute the correct sub-genome to each annotation
-values(gff)$sub.genome[gff$name %in% subGenomes[,1]]<-"M1"
-values(gff)$sub.genome[gff$name %in% subGenomes[,2]]<-"M2"
+values(gff)$sub.genome[gff$name %in% subGenomes[,2]]<-"M1"
+values(gff)$sub.genome[gff$name %in% subGenomes[,3]]<-"M2"
 
 ```
 
@@ -373,9 +386,6 @@ geneData<-subsetByOverlaps(cov,gff,type = "within")
 
 ```
 
-```{r,message=FALSE,warning=FALSE}
-hist(geneData$coverage.B73, breaks = 40)
-```
 
 Next, the best thing to do it to calculate the allele frequencies based on the genotype calls. We can do this using an apply function over the `gcNorm` table, using `sum` as a function. Later we can trim the CNVs we want by looking at only those with exclusively up, or down calls etc. At this stage:
 
@@ -400,25 +410,20 @@ gcNorm<-gcNorm[,freq:=freqs]
 We probably want to focus on only those regions of the genome that have been called as "down" copy-number variants. These are regions that appear to be in lower copy number in one or more of the Palmar Chico individuals when compared with the reference B73.
 
 ```{r}
+
 #now try to look at the 'down' CNV
-downGroup<-gcNorm[apply(subset(gcNorm,select=c(27:47)),1,function(x) !all(x == 2) & !any(x==3) ),]
+downGroup<-gcNorm[apply(subset(gcNorm,select=c(27:45)),1,function(x) !all(x == 2) & !any(x==3) ),]
 # calculate the sfs for deletion
 propVariantSites<-rev(table(downGroup$freq)/sum(table(downGroup$freq)))
 propVariantSites<-propVariantSites[-38]
 # do it for a folded SFSs
 #min(p,38-p)
 
-
 #load in the snp sfs data
 SNPsfs<-exp(scan("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/teosinte19.sfs"))
 SNPsfs<-SNPsfs[-c(1,length(SNPsfs))]# removed fixed classes
 SNPsfs<-(SNPsfs/sum(SNPsfs))
 
-# calculate the folded SFSs for down CNVs
-alleleDiff<-38-downGroup$freq
-d<-cbind(alleleDiff,downGroup$freq)
-MAF<-apply(d,1,min)
-foldedPropVariantsSites<-table(MAF)/sum(table(MAF)
 
 # plot the SFSs
 b<-barplot(rbind(SNPsfs,c(propVariantSites)),beside=TRUE, col = c("darkolivegreen4","red"), xlab="frequency",
@@ -429,6 +434,249 @@ AxAt<-AxAt[seq(1,length(AxAt),by=5)]
 axis(1,at=AxAt,labels=Axlabel,cex.axis=1.4)
 legend("topright", legend=c("SNPs","down CNVs"), pch=15, col=c("darkolivegreen4","red"), cex=1.5, bty="n")
 
+```
+
+Because we cannot polarize in CNV in B73 vs Palmar Chico it is best to draw a folded SFS. 
+
+```{r}
+# calculate the folded SFSs for down CNVs
+alleleDiff<-38-downGroup$freq
+d<-cbind(alleleDiff,downGroup$freq)
+MAF<-apply(d,1,min)
+foldedPropVariantsSites<-table(MAF)/sum(table(MAF))
 
 # Make a folded SNP SFSs
+```
+
+## Are CNV in Hardy-Weinberg Frequency?
+
+The next step is to analyse CNVs with respect to HWE. Do gentypes end up in HWE given out data. If so this gives us added weight that these are biologically real (as they follow expected patterns of segregation) and secondly if they are in likely to be seggregating neutrally. In this instance we will focus on the "down CNVs", the HWE expectation is clear in this case, and most of our further analyses will be on this category of CNV. 
+
+```{r, warning=FALSE,message=FALSE, eval=FALSE}
+# first caculate the frequency (proportion) of the CNV, and the "normal" DNA.
+DNA_prop<-downGroup$freq/38
+downGroup<-downGroup[,DNA_prop:=DNA_prop]
+
+# calculate the expected gentype proportions according to HWE
+homDNA<-DNA_prop^2  #this corresponds to genotype call 2 p^2
+homCNV<-(1-DNA_prop)^2# this corresponds to genotype call 0, q^2
+hetero<-(2*(1-DNA_prop)*(DNA_prop))#  this corresponds to genotype call 1, 2pq
+
+# now what about the observed proportions
+observed<-apply(subset(downGroup,select=c(27:45)), 1 , function(x) (table(x)))
+#genotypes
+obs0<-NULL
+obs1<-NULL
+obs2<-NULL
+genos<-c("0","1","2")
+for ( i in 1:length(observed) ) {
+  obs0<-c(obs0,observed[[i]][genos[1]])
+  obs1<-c(obs1,observed[[i]][genos[2]])
+  obs2<-c(obs2,observed[[i]][genos[3]])
+}#for
+#make sure the vectors are named properly
+names(obs0)<-rep("0",length(obs0))
+names(obs1)<-rep("1",length(obs1))
+names(obs2)<-rep("2",length(obs2))
+# bind these vectors together
+obs.dt<-as.data.frame(cbind("obs.homoCNV"=obs0,"obs.hetero"=obs1,"obs.homoDNA"=obs2))
+rownames(obs.dt)<-NULL
+# now replace NAs with 0
+obs.dt[is.na(obs.dt) ]<-0
+
+# now assemble the expected genotypes frequencies
+# the proportion will be multiplied by 19 so they are directly comparable to the
+# observed genotype calls.
+
+exp.dt<-cbind("exp.homoCNV"=homCNV,"exp.hetero"=hetero,"exp.homoDNA"=homDNA)
+myList<-list("o"=obs.dt,"e"=exp.dt)
+
+pvals<-NULL
+
+for ( i in 1:length(obs2)) {
+  p<-fisher.test(as.matrix(rbind(obs.dt[i,],exp.dt[i,]*19)))$p.value
+  pvals<-c(pvals,p)
+}#for
+# pvals<-p.adjust(pvals,method="BH")
+hist(pvals,col="darkgrey",main="fisher's exact test", xlab="p-value", cex.axis=1.3,cex.lab=1.3)
+# add in the observed, expected and p-value
+downGroup<-cbind(downGroup,exp.dt,obs.dt)
+downGroup<-downGroup[,"hwe.pvalue":=pvals]
+downGroup<-downGroup[,"prop.DNA.homozygotes":=(downGroup$obs.homoDNA/19)]
+downGroup<-downGroup[,"prop.CNV.homoozygotes":=(downGroup$obs.homoCNV/19)]
+downGroup<-downGroup[,"prop.heterozygotes":=(downGroup$obs.hetero/19)]
+
+ggplot(data=downGroup,aes(x=freq, y=prop.DNA.homozygotes)) +
+  theme_bw()+
+  geom_smooth(size=2)+
+  geom_smooth(data=downGroup,aes(x=freq, y=prop.CNV.homoozygotes, colour="red",size=2))+
+  geom_smooth(data=downGroup,aes(x=freq, y=prop.heterozygotes, colour="green",size=2))
+  
+
+```
+
+## Where are CNV across the genome?
+
+```{r, warning=FALSE,message=FALSE}
+
+source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/data.frame2GRanges.R")
+downGRanges<-data.frame2GRanges(as.data.frame(downGroup),keepColumns = TRUE)
+
+#load in the MB windows...
+MB.windows<-read.table("/Users/simonrenny-byfield/GitHubRepos/custom_cnv/data/MB.intervals.bed")
+
+# turn into a GRanges object
+MB.windows<-GRanges(seqnames=MB.windows$V1,ranges=IRanges(MB.windows$V2,MB.windows$V3), "middle"=(MB.windows$V2+MB.windows$V3)/2 )
+
+# find the proportion of windows that are called as CNV
+MB.hits<-as.matrix(findOverlaps(MB.windows,downGRanges))
+propCNV<-table(MB.hits[,1])/500
+
+# now attribute the propCNV to the MB.windows
+MB.windows$propCNV<-0
+MB.windows$propCNV[as.numeric(names(table(MB.hits[,1])))]<-propCNV
+
+
+#save(MB.windows,file="MB.windows.RData")
+# attribute the local proportion of CNVs to recombination rate
+mb.down<-as.matrix(findOverlaps(downGRanges,MB.windows))
+# now add the appropriate value of prop CNV
+values(downGRanges)$propCNV[mb.down[,1]]<-MB.windows$propCNV[mb.down[,2]]
+
+# now plot the data
+
+deletionPlot<-ggplot(data=as.data.frame(downGRanges)[as.data.frame(downGRanges)$seqnames %in% c(3,5,6,7),], aes(x=start/10^6,y=1-(freq/38),colour=propCNV),labels = c("chr3","chr5",rep("chr6",2))) +
+  theme_bw()+
+  geom_point(size= 2)+
+  #geom_smooth(data=as.data.frame(downCNVs),x=start,y=freq,color = "red")
+  facet_grid(seqnames ~ .)+
+  xlab("position (Mbp)") +
+  ylab("CNV frequency") +
+  scale_y_continuous(breaks=c(0,0.5,1))+
+  scale_colour_gradientn(colours=rainbow(5),name="local\ndensity\nof CNVs") +
+  guides(fill=guide_legend(title="proportion of CNVs")) +
+  #geom_smooth(data = as.data.frame(chr6Coverage), aes(x=start/10^6,y=JRIAL2D/1000, col = chr))+
+  theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6,hjust=0.75),
+        axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-15),
+        strip.text.y=element_text(size=25,angle=-90),
+        legend.title=element_text(size=15),legend.text=element_text(size=12),legend.key.size=unit(1,"cm"),
+        legend.background=element_blank())
+
+print(deletionPlot)
+
+```
+
+What about covergae over the genome. Are deletions obvious looking at coverage..
+
+```{r,warning=FALSE,message=FALSE}
+ggplot(data=subset(gcNorm,subset=chr %in% c(3,5,6)), aes(x=start/10^6,y=JRIAL2G/B73)) +
+  theme_bw()+
+  ylim(0,3)+
+  facet_grid( chr ~ . )+
+  geom_point(size=0.3)+
+  xlab("position (Mbp)") +
+  ylab("coverage ratio (JRIAL2G/B73)") +
+  stat_smooth(data=subset(gcNorm,subset=chr %in% c(3,5,6)), aes(x=start/10^6,y=JRIAL2G/B73, col = chr), span=0.025,method = "loess", size=1.7,colour="red")+
+  theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6,hjust=0.75),
+        axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-15),
+        strip.text.y=element_text(size=25,angle=-90),
+        legend.title=element_text(size=15),legend.text=element_text(size=12),legend.key.size=unit(1,"cm"),
+        legend.background=element_blank())
+
+```
+
+## Genes and CNVs..
+
+How are genes impacted by CNVs, are certain annotation types more susceptable to tolerating CNV and what are the frequencies of CNVs over each annotation type.
+
+```{r, warning=FALSE,message=FALSE}
+# a list of annotation types, first clearing up the data
+gff$type[gff$type == "miRNA_gene"]<-"miRNA"
+gff$type[gff$type == "three_prime_UTR"]<-"3'-UTR"
+gff$type[gff$type == "five_prime_UTR"]<-"5'-UTR"
+annotation<-unique(gff$type)
+
+# for each annotation type generate an SFS
+
+for ( i in annotation[-7] ) {
+  # subset the gff
+  annot<-subset(gff,subset=type == i)
+  # overlap these genes with the down CNVs
+  annotDown<-subsetByOverlaps(downGRanges, annot)
+  propVariant<-rev(table(factor(annotDown$freq, levels=0:38))/sum(table(factor(annotDown$freq,levels=0:38))))
+  propVariant<-propVariant[-c(1,38)]
+  b<-barplot(rbind(SNPsfs,propVariant[-38]), main=i,col=c("cornflowerblue","orange"),beside=T, xlab="frequency",
+          ylab="proportion of variant sites", xaxt="n", cex.axis=1.4, cex.lab=1.4)
+  Axlabel<-c(1,5,10,15,20,25,30,35)
+  AxAt<-(b[1,]+b[2,])/2
+  AxAt<-AxAt[seq(1,length(AxAt),by=5)]
+  legend("topright", legend=c("SNPs","down CNVs"), pch=15, col=c("cornflowerblue","orange"), cex=1.8, bty="n")
+}# for
+
+```
+
+## Tajima's D and CNV frequency
+
+Next if is important to examine Tajima's D over CNV of various frequency.
+
+```{r, warning=FALSE,message=FALSE}
+
+
+####
+# Do some plotting
+####
+
+ggplot(data=downGroup, aes(x=(38-freq)/38, y=td)) +
+  theme_bw()+
+  geom_smooth(colour="darkgreen", size=2)+
+  ylab("Tajima's D")+
+  xlab("CNV frequency")+
+  theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6),
+        axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-5),
+        strip.text.y=element_text(size=25,angle=0),
+        legend.background=element_blank())
+
+```
+
+Now look at the Tajima'D data over genic regions:
+
+```{r, warning=FALSE,message=FALSE}
+
+# now see the overlap with genes
+downGenes<-subsetByOverlaps(downGRanges,gff)
+
+# try the same plot but for genes
+ggplot(data=as.data.frame(downGenes), aes(x=(38-freq)/38, y=td)) +
+  theme_bw()+
+  geom_smooth(colour="darkgreen", size=2)+
+  ylab("Tajima's D")+
+  xlab("CNV frequency")+
+  theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6),
+        axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-5),
+        strip.text.y=element_text(size=25,angle=0),
+        legend.background=element_blank())
+
+```
+
+Now use the maize1 and maize2 subgenome data to polarize deletions so that we can be sure they really are deletions in Palmar Chico.
+
+```{r, warning=FALSE,message=FALSE}
+# attribute maize1 and maize2 designation to the down CNVs
+sub.genome.hits<-as.matrix(findOverlaps(downGenes,gff))
+values(downGenes)$sub.genome<-"NA"
+values(downGenes)$sub.genome[sub.genome.hits[,1]]<-gff$sub.genome[sub.genome.hits[,2]]
+
+# now plot maize1 and maize2
+ggplot(data=as.data.frame(downGenes), aes(x=(38-freq)/38, y=td,fill=sub.genome)) +
+  theme_bw()+
+  facet_wrap(~sub.genome, nrow=3) +
+  stat_smooth(color="grey34",size = 2, alpha = 0.6)+
+  scale_fill_manual(values = c("blue", "red", "grey"))+
+  ylab("Tajima's D")+
+  xlab("CNV frequency")+
+  theme(axis.title.x = element_text(size=a.size,vjust=-1.6),axis.title.y = element_blank(),
+          axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-5),
+          plot.margin=unit(c(m.size, m.size, m.size, m.size), "in"),
+          strip.text.x=element_text(size=25,angle=0),strip.background=element_blank(),
+          legend.position="none")
 ```
