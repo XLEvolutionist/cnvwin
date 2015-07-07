@@ -16,7 +16,7 @@ my $previousChr=0;
 open( MAFS,"<$ARGV[0]" ) || die "Could not open file:$!\n";
 
 # print a needed header
-print "position\tx\tn\tfolded\n";
+
 
 
 # scan through the input file
@@ -37,6 +37,7 @@ while ( <MAFS> ) {
 		# open up the initial output file
 		my $file = "$chromo"."_sweepfinder_input.txt";
 		open( OUT, ">$file" );
+		print "position\tx\tn\tfolded\n";
 	}# if		
 	# if we have a ancestral state declare the SNP to be unfolded.
 	if ( $anc eq "N" ) { $fold=1; }
