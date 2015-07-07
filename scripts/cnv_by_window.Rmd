@@ -426,13 +426,13 @@ SNPsfs<-(SNPsfs/sum(SNPsfs))
 
 
 # plot the SFSs
-b<-barplot(rbind(SNPsfs,c(propVariantSites)),beside=TRUE, col = c("darkolivegreen4","red"), xlab="frequency",
-          ylab="proportion of variant sites", xaxt="n", cex.axis=1.4, cex.lab=1.4)
+b<-barplot(rbind(SNPsfs,c(propVariantSites)),beside=TRUE, col = c("cornflowerblue","orange"), xlab="frequency",
+          ylab="proportion of variant sites", xaxt="n", cex.axis=1.4, cex.lab=1.4, main="unfolded SFS")
 Axlabel<-c(1,5,10,15,20,25,30,35)
 AxAt<-(b[1,]+b[2,])/2
 AxAt<-AxAt[seq(1,length(AxAt),by=5)]
 axis(1,at=AxAt,labels=Axlabel,cex.axis=1.4)
-legend("topright", legend=c("SNPs","down CNVs"), pch=15, col=c("darkolivegreen4","red"), cex=1.5, bty="n")
+legend("topright", legend=c("SNPs","down CNVs"), pch=15, col=c("cornflowerblue","orange"), cex=1.5, bty="n")
 
 ```
 
@@ -444,8 +444,19 @@ alleleDiff<-38-downGroup$freq
 d<-cbind(alleleDiff,downGroup$freq)
 MAF<-apply(d,1,min)
 foldedPropVariantsSites<-table(MAF)/sum(table(MAF))
+foldedPropVariantsSites<-foldedPropVariantsSites[-c(1,length(foldedPropVariantsSites))]
+# load in the folded SFS for SNPs
+foldsfs<-exp(scan("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/folded.teosinte19.sfs"))
+foldsfs<-foldsfs[-c(1,length(foldsfs))]# removed fixed classes
+foldsfs<-(foldsfs/sum(foldsfs))
 
-# Make a folded SNP SFSs
+b<-barplot(rbind(foldsfs,foldedPropVariantsSites),beside=TRUE, col = c("cornflowerblue","orange"), xlab="frequency",
+          ylab="proportion of variant sites", cex.axis=1.6, cex.lab=1.4, main="folded SFS")
+#Axlabel<-c(1,5,10,15,20)
+#AxAt<-(b[1,]+b[2,])/2
+#AxAt<-AxAt[seq(1,length(AxAt),by=5)]
+axis(1,at=AxAt,labels=Axlabel,cex.axis=1.6)
+legend("topright", legend=c("SNPs","down CNVs"), pch=15, col=c("cornflowerblue","orange"), cex=1.5, bty="n")
 ```
 
 ## Are CNV in Hardy-Weinberg Frequency?
@@ -607,9 +618,9 @@ for ( i in annotation[-7] ) {
   propVariant<-propVariant[-c(1,38)]
   b<-barplot(rbind(SNPsfs,propVariant[-38]), main=i,col=c("cornflowerblue","orange"),beside=T, xlab="frequency",
           ylab="proportion of variant sites", xaxt="n", cex.axis=1.4, cex.lab=1.4)
-  Axlabel<-c(1,5,10,15,20,25,30,35)
-  AxAt<-(b[1,]+b[2,])/2
-  AxAt<-AxAt[seq(1,length(AxAt),by=5)]
+  #Axlabel<-c(1,5,10,15,20,25,30,35)
+  #AxAt<-(b[1,]+b[2,])/2
+  #AxAt<-AxAt[seq(1,length(AxAt),by=5)]
   legend("topright", legend=c("SNPs","down CNVs"), pch=15, col=c("cornflowerblue","orange"), cex=1.8, bty="n")
 }# for
 
