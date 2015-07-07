@@ -38,7 +38,8 @@ while ( <MAFS> ) {
 		my $file = "$chromo"."_sweepfinder_input.txt";
 		open( OUT, ">$file" );
 		print "position\tx\tn\tfolded\n";
-	}# if		
+	}# if
+	$previousChr = $chromo;		
 	# if we have a ancestral state declare the SNP to be unfolded.
 	if ( $anc eq "N" ) { $fold=1; }
 	# next if the frequency of the minor allele is zero.
