@@ -35,7 +35,8 @@ while ( <MAFS> ) {
 	if ( $previousChr ne $chromo ) {
 		close OUT;
 		# open up the initial output file
-		open(OUT, ">$chromo_sweepfinder_input.txt" );
+		my $file = "$chromo_sweepfinder_input.txt";
+		open( OUT, >$file );
 	}# if		
 	# if we have a ancestral state declare the SNP to be unfolded.
 	if ( $anc eq "N" ) { $fold=1; }
