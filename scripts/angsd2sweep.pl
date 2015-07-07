@@ -17,8 +17,6 @@ open( MAFS,"<$ARGV[0]" ) || die "Could not open file:$!\n";
 
 # print a needed header
 
-
-
 # scan through the input file
 while ( <MAFS> ) {
 	next if m/position/;
