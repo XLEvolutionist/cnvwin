@@ -34,7 +34,7 @@ while ( <MAFS> ) {
 	# if the minor is equal to the anc, then we need to flip the frequency
 	# because the major allele is now the derived.
 	if ( $minor eq $anc ) {
-		$freq = 1-($knownEM*$nInd);
+		$freq = $nInd-($knownEM*$nInd);
 	}# if
 	else {
 		$freq=$knownEM*$nInd;
