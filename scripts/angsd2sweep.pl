@@ -49,7 +49,7 @@ while ( <MAFS> ) {
 		$freq = (2*$nInd)-($knownEM*($nInd*2));
 	}# if
 	else {
-		$freq=$knownEM*$nInd;
+		$freq=$knownEM*(2*$nInd);
 	}# else
 	print OUT $position , "\t" , round($freq), "\t" , 2*$nInd , "\t" , $fold , "\n";
 }#while
