@@ -50,6 +50,7 @@ while ( <MAFS> ) {
 	else {
 		$freq=$knownEM*(2*$nInd);
 	}# else
+	next if $freq == 0;
 	print OUT $position , "\t"; 
 	printf OUT ("%.0f",$freq);
 	print OUT "\t";
