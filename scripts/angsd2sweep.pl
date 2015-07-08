@@ -1,6 +1,7 @@
 #!usr/bin/perl
 use strict;
 use warnings;
+use Math::Round;
 
 # usage: script.pl <mafs.gz>
 
@@ -50,7 +51,7 @@ while ( <MAFS> ) {
 	else {
 		$freq=$knownEM*$nInd;
 	}# else
-	print OUT $position , "\t" , $freq, "\t" , $nInd , "\t" , $fold , "\n";
+	print OUT $position , "\t" , round($freq), "\t" , 2*$nInd , "\t" , $fold , "\n";
 }#while
 
 exit;
