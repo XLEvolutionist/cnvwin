@@ -358,6 +358,7 @@ values(gff)$sub.genome[gff$name %in% subGenomes[,3]]<-"M2"
 samples<-read.table("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/sample_list.txt")
 samples<-as.vector(gsub(".sorted.bam","",samples$V1))
 setnames(gcNorm,colnames(gcNorm),c(colnames(gcNorm)[1:4],samples))
+samples<-samples[samples != "JRIAL2T"]
 ```
 
 ## Filtering the data
@@ -367,7 +368,7 @@ Before we start, it might be a good idea to screen out windows that have really 
 ```{r,warning=FALSE,message=FALSE}
 #set the max read depth
 maxDepth<-15
-minDepth<-0.01
+minDepth<-0.1
 gcNorm<-subset(gcNorm,subset=gcNorm$B73 < maxDepth )
 gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
@@ -377,7 +378,7 @@ gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
 ```{r, message=FALSE,warning=FALSE,results='hide'}
 source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R")
-cnvs<-callCNV(gcNorm,samples,limit=1,limitHom=4)
+cnvs<-callCNV(gcNorm,samples,limit=1.2,limitHom=3.5)
 #dev.off()
 # take a look at the genic region in terms of coverage
 cov<-GRanges(seqnames=gcNorm$chr, ranges=IRanges(gcNorm$start,gcNorm$end),coverage=subset(gcNorm,select="B73"))
@@ -469,13 +470,11 @@ DNA_prop<-downGroup$freq/38
 downGroup<-downGroup[,DNA_prop:=DNA_prop]
 ```
 
-```{r, warning=FALSE,message=FALSE, eval=TRUE}
+```{r, warning=FALSE,message=FALSE, eval=FALSE}
 # calculate the expected gentype proportions according to HWE
 homDNA<-DNA_prop^2  #this corresponds to genotype call 2 p^2
 homCNV<-(1-DNA_prop)^2# this corresponds to genotype call 0, q^2
 hetero<-(2*(1-DNA_prop)*(DNA_prop))#  this corresponds to genotype call 1, 2pq
-
-
 
 # now what about the observed proportions
 observed<-apply(subset(downGroup,select=c(27:45)), 1 , function(x) (table(x)))
@@ -516,7 +515,7 @@ for ( i in 1:length(obs2)) {
 hist(pvals,col="darkgrey",main="fisher's exact test", xlab="p-value", cex.axis=1.3,cex.lab=1.3)
 ```
 
-```{r}
+```{r,r, warning=FALSE,message=FALSE, eval=FALSE}
 # add in the observed, expected and p-value
 downGroup<-cbind(downGroup,exp.dt,obs.dt)
 downGroup<-downGroup[,"hwe.pvalue":=pvals]
@@ -530,7 +529,6 @@ ggplot(data=downGroup,aes(x=freq, y=prop.DNA.homozygotes)) +
   geom_smooth(data=downGroup,aes(x=freq, y=prop.CNV.homoozygotes, colour="red",size=2))+
   geom_smooth(data=downGroup,aes(x=freq, y=prop.heterozygotes, colour="green",size=2))
   
-
 ```
 
 ## Where are CNV across the genome?
@@ -605,8 +603,8 @@ ggplot(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=
   theme_bw()+
   ylim(-4,4)+
   #facet_grid( chr ~ . )+
-  geom_point(size=1.5, colour="darkgreen")+
-  geom_point(aes(x=start/10^6,y=td),size=1.5,colour="red4")+
+  geom_point(size=0.8, colour="darkgreen")+
+  geom_point(aes(x=start/10^6,y=td),size=0.8,colour="red4")+
   xlab("position (Mbp)") +
   ylab("coverage ratio (JRIAL2G/B73)") +
   stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=JRIAL2G/B73, col = chr), span=0.08,method = "loess", size=1.7,colour="darkgreen")+
@@ -677,6 +675,13 @@ for ( i in annotation[-7] ) {
 How to CNV segregate according the maize1 and maize2. Do either of the two sub genomes show any bias in hte number of seggregating CNV? What about the collection of genes that do not belong to either of the two maize sub-genomes (i.e. those without any syntenic ortholofs between Sorghum and maize)?
 
 ```{r, warning=FALSE,message=FALSE}
+
+downGenes<-subsetByOverlaps(downGRanges,gff, minoverlap = 500)
+# attribute maize1 and maize2 designation to the down CNVs
+sub.genome.hits<-as.matrix(findOverlaps(downGenes,gff))
+values(downGenes)$sub.genome<-"NA"
+values(downGenes)$sub.genome[sub.genome.hits[,1]]<-gff$sub.genome[sub.genome.hits[,2]]
+
 table(downGenes$sub.genome) # total genes annotations seggregating as CNVs
 table(gff$sub.genome) # total annotations of each type
 table(downGenes$sub.genome)/table(gff$sub.genome)
@@ -728,9 +733,18 @@ ggplot(data=downGroup, aes(x=(38-freq)/38, y=td)) +
 
 What about Tajima's D next to CNV calls. Do we see any evidence a variable Tajima's D in these regions??
 
-```{r, warning=FALSE,message=FALSE}
+```{r, warning=FALSE,message=FALSE, echo =FALSE, eval=FALSE}
 windowsTD<-GRanges(seqnames=gcNorm$chr,ranges=IRanges(gcNorm$start,gcNorm$end),td=gcNorm$td)
-nextTo<-distanceToNearest(subset(windowsTD,subset=seqnames==4),reduce(downGRanges), select="arbitrary")
+nextTo<-distanceToNearest(subset(windowsTD,subset=seqnames %in% c(2:10)),reduce(downGRanges), select="arbitrary")
+
+# remove the zero class, that is windows that are in CNVs
+nextTo<-subset(nextTo,subset=distance != 0 )
+values(nextTo)$td<-windowsTD$td[nextTo@queryHits]
+
+ggplot(data=as.data.frame(subset(nextTo,subset=distance < 100000)), aes(x = distance/1000, y = td)) +
+  theme_bw()+
+  geom_density2d(col=alpha("red",0.9))+
+  stat_smooth(data=as.data.frame(subset(nextTo,subset=distance < 100000)), aes(x = distance/1000, y = td), span=0.1,method="loess")
 
 ```
 
@@ -754,10 +768,6 @@ ggplot(data=as.data.frame(downGenes), aes(x=(38-freq)/38, y=td)) +
 Now use the maize1 and maize2 subgenome data to polarize deletions so that we can be sure they really are deletions in Palmar Chico.
 
 ```{r, warning=FALSE,message=FALSE}
-# attribute maize1 and maize2 designation to the down CNVs
-sub.genome.hits<-as.matrix(findOverlaps(downGenes,gff))
-values(downGenes)$sub.genome<-"NA"
-values(downGenes)$sub.genome[sub.genome.hits[,1]]<-gff$sub.genome[sub.genome.hits[,2]]
 
 # now plot maize1 and maize2
 ggplot(data=as.data.frame(downGenes), aes(x=(38-freq)/38, y=td,fill=sub.genome)) +

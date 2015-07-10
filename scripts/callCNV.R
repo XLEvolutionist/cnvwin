@@ -14,8 +14,8 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
   q.mat<-data.table(cnv.mat)
   # head(cnv.mat)
   # open up a pdf and print the histograms
-  pdf("samples_covergae.pdf")
-  par(mfrow=c(3,2))
+  #pdf("samples_covergae.pdf")
+  #par(mfrow=c(3,2))
   # cycle through the samples
   for ( s in samples ) {
     # print(s)
@@ -37,9 +37,9 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     d<-(mean(ratio)-ratio)
     # lower tail might not be correct
     # plot the ratio as a histogram
-    p2<-hist(ratio, main=paste0(s," ratio (sample/ref)"),
-       cex.lab=1.4, xlab="log(coverage difference (sample/ref))", col=alpha("cornflowerblue",0.4),
-       border=alpha("cornflowerblue",0.4), breaks=200)
+    #p2<-hist(ratio, main=paste0(s," ratio (sample/ref)"),
+    #   cex.lab=1.4, xlab="log(coverage difference (sample/ref))", col=alpha("cornflowerblue",0.4),
+    #   border=alpha("cornflowerblue",0.4), breaks=200)
     # calculate the CNV "limit
     #limit<-qnorm(0.05/(dim(gcNorm)[1]),lower.tail=FALSE)
     linePos<-mean(ratio)+(limit*stdev)
@@ -64,16 +64,16 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     #abline(v=ratio[calls==1], col=alpha("red",0.1), lwd=0.1, lty="solid", lend=1)
     #abline(v=ratio[calls==-1], col=alpha("blue",0.01), lwd=0.1, lty="solid", lend=1)
     #abline(v=ratio[calls==-2], col=alpha("blue",0.1), lwd=0.1, lty="solid", lend=1)
-    abline(v=mean(ratio)-abs(linePos), col = "black", lwd=1, lty = "dashed",lend=1)
-    abline(v=mean(ratio)+(linePos), col = "black", lwd=1, lty = "dashed",lend=1)
-    abline(v=mean(ratio)-abs(linePosHom), col = "black", lwd=1, lty = "dashed",lend=1)
-    abline(v=mean(ratio)+(linePosHom), col = "black", lwd=1, lty = "dashed",lend=1)
+    #abline(v=mean(ratio)-abs(linePos), col = "black", lwd=1, lty = "dashed",lend=1)
+    #abline(v=mean(ratio)+(linePos), col = "black", lwd=1, lty = "dashed",lend=1)
+    #abline(v=mean(ratio)-abs(linePosHom), col = "black", lwd=1, lty = "dashed",lend=1)
+    #abline(v=mean(ratio)+(linePosHom), col = "black", lwd=1, lty = "dashed",lend=1)
     #now the qvalue
     qVal<-pnorm(q=d,mean=0,sd=stdev)
     q.mat[,sName:=-log(qVal),with=FALSE]
-    print(p1)
-    print(p2)
+    #print(p1)
+    #print(p2)
   }
-  dev.off()
+  #dev.off()
   output<-list(cnvs=gcNorm,q.mat=q.mat)
 }# function callCNV()
