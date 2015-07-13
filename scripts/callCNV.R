@@ -23,9 +23,9 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     sub.df<-subset(gcNorm,select=c(s))
     sub.df<-data.frame(sub.df)
     # print(head(sub.df))
-    p1<-hist(sub.df[,s], main =paste0(s, " read-depth"),
-       xlab="normalized coverage per kb",cex.lab=1.4, breaks = c(seq(0,20,0.2),20.00001,max(sub.df[,s])), xlim=c(0,21), 
-       col = alpha("cornflowerblue",0.5),border=alpha("cornflowerblue",0.7))
+    #p1<-hist(sub.df[,s], main =paste0(s, " read-depth"),
+    #   xlab="normalized coverage per kb",cex.lab=1.4, breaks = c(seq(0,20,0.2),20.00001,max(sub.df[,s])), xlim=c(0,21), 
+    #   col = alpha("cornflowerblue",0.5),border=alpha("cornflowerblue",0.7))
     #
     # calculate the ratio between sample and reference"
     ratio<-sub.df[,s]/subset(gcNorm,select=ref)
@@ -45,7 +45,7 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     linePos<-mean(ratio)+(limit*stdev)
     linePosHom<-mean(ratio)+(limitHom*stdev)
     lims<-c(lims,min(mean(ratio)+linePos),abs(mean(ratio)-linePos))
-    abline(v=mean(ratio), col = "black", lwd=2, lty = "solid",lend=1)
+    #abline(v=mean(ratio), col = "black", lwd=2, lty = "solid",lend=1)
     #turn sub.df back into a data.table
     sub.df<-data.table(sub.df,ratio)
     ratio.df<-data.table(sub.df,ratio)

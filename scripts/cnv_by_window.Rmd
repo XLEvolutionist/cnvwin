@@ -378,7 +378,7 @@ gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
 ```{r, message=FALSE,warning=FALSE,results='hide'}
 source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R")
-cnvs<-callCNV(gcNorm,samples,limit=1.2,limitHom=3.5)
+cnvs<-callCNV(gcNorm,samples,limit=1,limitHom=3)
 #dev.off()
 # take a look at the genic region in terms of coverage
 cov<-GRanges(seqnames=gcNorm$chr, ranges=IRanges(gcNorm$start,gcNorm$end),coverage=subset(gcNorm,select="B73"))
@@ -477,26 +477,11 @@ homCNV<-(1-DNA_prop)^2# this corresponds to genotype call 0, q^2
 hetero<-(2*(1-DNA_prop)*(DNA_prop))#  this corresponds to genotype call 1, 2pq
 
 # now what about the observed proportions
-observed<-apply(subset(downGroup,select=c(27:45)), 1 , function(x) (table(x)))
-#genotypes
-obs0<-NULL
-obs1<-NULL
-obs2<-NULL
-genos<-c("0","1","2")
-for ( i in 1:length(observed) ) {
-  obs0<-c(obs0,observed[[i]][genos[1]])
-  obs1<-c(obs1,observed[[i]][genos[2]])
-  obs2<-c(obs2,observed[[i]][genos[3]])
-}#for
-#make sure the vectors are named properly
-names(obs0)<-rep("0",length(obs0))
-names(obs1)<-rep("1",length(obs1))
-names(obs2)<-rep("2",length(obs2))
+obs.dt<-t(apply(subset(downGroup,select=c(27:45)), 1 , function(x) (table(factor(x, levels=0:2)))))
+
 # bind these vectors together
-obs.dt<-as.data.frame(cbind("obs.homoCNV"=obs0,"obs.hetero"=obs1,"obs.homoDNA"=obs2))
-rownames(obs.dt)<-NULL
-# now replace NAs with 0
-obs.dt[is.na(obs.dt) ]<-0
+obs.dt<-as.data.frame(obs.dt)
+colnames(obs.dt)<-c("0","1","2")
 
 # now assemble the expected genotypes frequencies
 # the proportion will be multiplied by 19 so they are directly comparable to the
@@ -599,7 +584,7 @@ ggplot(data=subset(gcNorm,subset=chr %in% c(3,5,6)), aes(x=start/10^6,y=JRIAL2G/
         legend.title=element_text(size=15),legend.text=element_text(size=12),legend.key.size=unit(1,"cm"),
         legend.background=element_blank())
 
-ggplot(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=JRIAL2B/B73)) +
+ggplot(data=subset(gcNorm,subset=chr == 6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=JRIAL2B/B73)) +
   theme_bw()+
   ylim(-4,4)+
   #facet_grid( chr ~ . )+
@@ -608,6 +593,23 @@ ggplot(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=
   xlab("position (Mbp)") +
   ylab("coverage ratio (JRIAL2G/B73)") +
   stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=JRIAL2G/B73, col = chr), span=0.08,method = "loess", size=1.7,colour="darkgreen")+
+  stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=td, col = chr), span=0.08,method = "loess", size=1.7,colour="red4")+
+  theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6,hjust=0.75),
+        axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-15),
+        strip.text.y=element_text(size=25,angle=-90),
+        legend.title=element_text(size=15),legend.text=element_text(size=12),legend.key.size=unit(1,"cm"),
+        legend.background=element_blank())
+
+### do the same for TIL01
+ggplot(data=subset(gcNorm,subset=chr == 6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=TIL01/B73)) +
+  theme_bw()+
+  ylim(-4,4)+
+  #facet_grid( chr ~ . )+
+  geom_point(size=0.8, colour="darkgreen")+
+  geom_point(aes(x=start/10^6,y=td),size=0.8,colour="red4")+
+  xlab("position (Mbp)") +
+  ylab("coverage ratio (JRIAL2G/B73)") +
+  stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=TIL01/B73, col = chr), span=0.08,method = "loess", size=1.7,colour="darkgreen")+
   stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=td, col = chr), span=0.08,method = "loess", size=1.7,colour="red4")+
   theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6,hjust=0.75),
         axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-15),
