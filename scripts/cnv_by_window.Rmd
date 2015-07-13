@@ -470,7 +470,7 @@ DNA_prop<-downGroup$freq/38
 downGroup<-downGroup[,DNA_prop:=DNA_prop]
 ```
 
-```{r, warning=FALSE,message=FALSE, eval=FALSE}
+```{r, warning=FALSE,message=FALSE, eval=TRUE}
 # calculate the expected gentype proportions according to HWE
 homDNA<-DNA_prop^2  #this corresponds to genotype call 2 p^2
 homCNV<-(1-DNA_prop)^2# this corresponds to genotype call 0, q^2
@@ -500,7 +500,7 @@ for ( i in 1:length(obs2)) {
 hist(pvals,col="darkgrey",main="fisher's exact test", xlab="p-value", cex.axis=1.3,cex.lab=1.3)
 ```
 
-```{r,r, warning=FALSE,message=FALSE, eval=FALSE}
+```{r,r, warning=FALSE,message=FALSE, eval=TRUE}
 # add in the observed, expected and p-value
 downGroup<-cbind(downGroup,exp.dt,obs.dt)
 downGroup<-downGroup[,"hwe.pvalue":=pvals]
