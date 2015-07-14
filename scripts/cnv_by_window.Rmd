@@ -14,7 +14,7 @@ library(EDASeq)
 library(grid)
 
 ####
-# Define some useful available
+# Define some useful variables
 ####
 
 a.size<-26
@@ -336,7 +336,10 @@ gc()
 Now we have unified the coverage and Tajima's D datasets we can now begin to load in the gene annotation data. Included with this will be the neccesary maize1 and maize2 data.
 
 ```{r}
+####
 # load in the annotation data
+####
+
 gff<-fread("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/AGPv3.22_primary_transcripts.bed")
 gff<-GRanges(seqnames=gff$V1, ranges=IRanges(gff$V2,gff$V3),type=gff$V4,name=gff$V5)
 # remove scaffolds
@@ -366,9 +369,13 @@ samples<-samples[samples != "JRIAL2T"]
 Before we start, it might be a good idea to screen out windows that have really high coverage in B73, these are likely to represent repeatitive or poorly assembled region of the genome and should be excluded from further consideration.
 
 ```{r,warning=FALSE,message=FALSE}
-#set the max read depth
-maxDepth<-15
-minDepth<-0.1
+####
+# set the max read depth
+####
+
+maxDepth<-10
+minDepth<-0.01
+# trim the dataset
 gcNorm<-subset(gcNorm,subset=gcNorm$B73 < maxDepth )
 gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
@@ -377,14 +384,20 @@ gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 ## Runnig the CNV calling function
 
 ```{r, message=FALSE,warning=FALSE,results='hide'}
+
+####
+# Run the CNV calling function
+####
+
 source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R")
-cnvs<-callCNV(gcNorm,samples,limit=1,limitHom=3)
+cnvs<-callCNV(gcNorm,samples,limit=0.7,limitHom=3.2)
 #dev.off()
+
 # take a look at the genic region in terms of coverage
 cov<-GRanges(seqnames=gcNorm$chr, ranges=IRanges(gcNorm$start,gcNorm$end),coverage=subset(gcNorm,select="B73"))
+
 # check for overlaps between gcNorm and gff
 geneData<-subsetByOverlaps(cov,gff,type = "within")
-
 ```
 
 
@@ -401,7 +414,10 @@ gcNorm<-cnvs$cnvs
 # remove the strange sample 
 gcNorm<-gcNorm[,JRIAL2T:=NULL]
 gcNorm<-gcNorm[,JRIAL2T_CNV:=NULL]
+
+# calculate the frequency of each interval
 freqs<-apply(subset(gcNorm,select=c(27:45)), 1 , function(x) sum(x))
+
 # add a new column to the gcNorm table, note this is the frequency of the DNA segment
 gcNorm<-gcNorm[,freq:=freqs]
 ```
@@ -414,17 +430,15 @@ We probably want to focus on only those regions of the genome that have been cal
 
 #now try to look at the 'down' CNV
 downGroup<-gcNorm[apply(subset(gcNorm,select=c(27:45)),1,function(x) !all(x == 2) & !any(x==3) ),]
+
 # calculate the sfs for deletion
 propVariantSites<-rev(table(downGroup$freq)/sum(table(downGroup$freq)))
 propVariantSites<-propVariantSites[-38]
-# do it for a folded SFSs
-#min(p,38-p)
 
 #load in the snp sfs data
 SNPsfs<-exp(scan("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/teosinte19.sfs"))
 SNPsfs<-SNPsfs[-c(1,length(SNPsfs))]# removed fixed classes
 SNPsfs<-(SNPsfs/sum(SNPsfs))
-
 
 # plot the SFSs
 b<-barplot(rbind(SNPsfs,c(propVariantSites)),beside=TRUE, col = c("cornflowerblue","orange"), xlab="frequency",
@@ -443,9 +457,11 @@ Because we cannot polarize in CNV in B73 vs Palmar Chico it is best to draw a fo
 # calculate the folded SFSs for down CNVs
 alleleDiff<-38-downGroup$freq
 d<-cbind(alleleDiff,downGroup$freq)
+# the minor allele frequency
 MAF<-apply(d,1,min)
 foldedPropVariantsSites<-table(MAF)/sum(table(MAF))
 foldedPropVariantsSites<-foldedPropVariantsSites[-c(1,length(foldedPropVariantsSites))]
+
 # load in the folded SFS for SNPs
 foldsfs<-exp(scan("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/folded.teosinte19.sfs"))
 foldsfs<-foldsfs[-c(1,length(foldsfs))]# removed fixed classes
@@ -471,6 +487,7 @@ downGroup<-downGroup[,DNA_prop:=DNA_prop]
 ```
 
 ```{r, warning=FALSE,message=FALSE, eval=TRUE}
+
 # calculate the expected gentype proportions according to HWE
 homDNA<-DNA_prop^2  #this corresponds to genotype call 2 p^2
 homCNV<-(1-DNA_prop)^2# this corresponds to genotype call 0, q^2
@@ -483,22 +500,17 @@ obs.dt<-t(apply(subset(downGroup,select=c(27:45)), 1 , function(x) (table(factor
 obs.dt<-as.data.frame(obs.dt)
 colnames(obs.dt)<-c("obs.homoCNV","obs.hetero","obs.homoDNA")
 
-# now assemble the expected genotypes frequencies
-# the proportion will be multiplied by 19 so they are directly comparable to the
-# observed genotype calls.
-
 exp.dt<-cbind("exp.homoCNV"=homCNV,"exp.hetero"=hetero,"exp.homoDNA"=homDNA)*19
-#myList<-list("o"=obs.dt,"e"=exp.dt*19)
 
-pvals<-apply(cbind(obs.dt,exp.dt), 1 , function(x) { fisher.test(rbind(x[1:3],x[4:6]))$p.value})
+#pvals<-apply(cbind(obs.dt,exp.dt), 1 , function(x) { fisher.test(rbind(x[1:3],x[4:6]))$p.value})
 
-hist(pvals,col="darkgrey",main="fisher's exact test", xlab="p-value", cex.axis=1.3,cex.lab=1.3)
+#hist(pvals,col="darkgrey",main="fisher's exact test", xlab="p-value", cex.axis=1.3,cex.lab=1.3)
 ```
 
 ```{r,r, warning=FALSE,message=FALSE, eval=TRUE}
 # add in the observed, expected and p-value
 downGroup<-cbind(downGroup,exp.dt,obs.dt)
-downGroup<-downGroup[,"hwe.pvalue":=pvals]
+#<-downGroup[,"hwe.pvalue":=pvals]
 downGroup<-downGroup[,"prop.DNA.homozygotes":=(downGroup$obs.homoDNA/19)]
 downGroup<-downGroup[,"prop.CNV.homoozygotes":=(downGroup$obs.homoCNV/19)]
 downGroup<-downGroup[,"prop.heterozygotes":=(downGroup$obs.hetero/19)]
@@ -531,16 +543,14 @@ propCNV<-table(MB.hits[,1])/500
 # now attribute the propCNV to the MB.windows
 MB.windows$propCNV<-0
 MB.windows$propCNV[as.numeric(names(table(MB.hits[,1])))]<-propCNV
+save(MB.windows,file="MB.windows.RData")
 
-
-#save(MB.windows,file="MB.windows.RData")
 # attribute the local proportion of CNVs to recombination rate
 mb.down<-as.matrix(findOverlaps(downGRanges,MB.windows))
 # now add the appropriate value of prop CNV
 values(downGRanges)$propCNV[mb.down[,1]]<-MB.windows$propCNV[mb.down[,2]]
 
 # now plot the data
-
 deletionPlot<-ggplot(data=as.data.frame(downGRanges)[as.data.frame(downGRanges)$seqnames %in% c(3,5,6,7),], aes(x=start/10^6,y=1-(freq/38),colour=propCNV),labels = c("chr3","chr5",rep("chr6",2))) +
   theme_bw()+
   geom_point(size= 2)+
@@ -565,14 +575,16 @@ print(deletionPlot)
 What about covergae over the genome. Are deletions obvious looking at coverage..
 
 ```{r,warning=FALSE,message=FALSE}
-ggplot(data=subset(gcNorm,subset=chr %in% c(3,5,6)), aes(x=start/10^6,y=JRIAL2G/B73)) +
+
+# examine the coverage in different lines of Palmar Chico
+ggplot(data=subset(gcNorm,subset=chr %in% c(3,5,6)), aes(x=start/10^6,y=JRIAL2A/B73)) +
   theme_bw()+
   ylim(0,3)+
   facet_grid( chr ~ . )+
   geom_point(size=0.3)+
   xlab("position (Mbp)") +
   ylab("coverage ratio (JRIAL2G/B73)") +
-  stat_smooth(data=subset(gcNorm,subset=chr %in% c(3,5,6)), aes(x=start/10^6,y=JRIAL2G/B73, col = chr), span=0.025,method = "loess", size=1.7,colour="red")+
+  stat_smooth(data=subset(gcNorm,subset=chr %in% c(3,5,6)), aes(x=start/10^6,y=JRIAL2A/B73, col = chr), span=0.025,method = "loess", size=1.7,colour="red")+
   theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6,hjust=0.75),
         axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-15),
         strip.text.y=element_text(size=25,angle=-90),
@@ -587,7 +599,7 @@ ggplot(data=subset(gcNorm,subset=chr == 6 & start<25*10^6 & start>5*10^6), aes(x
   geom_point(aes(x=start/10^6,y=td),size=0.8,colour="red4")+
   xlab("position (Mbp)") +
   ylab("coverage ratio (JRIAL2G/B73)") +
-  stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=JRIAL2G/B73, col = chr), span=0.08,method = "loess", size=1.7,colour="darkgreen")+
+  stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=JRIAL2B/B73, col = chr), span=0.08,method = "loess", size=1.7,colour="darkgreen")+
   stat_smooth(data=subset(gcNorm,subset=chr ==6 & start<25*10^6 & start>5*10^6), aes(x=start/10^6,y=td, col = chr), span=0.08,method = "loess", size=1.7,colour="red4")+
   theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6,hjust=0.75),
         axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-15),
@@ -649,7 +661,6 @@ gff$type[gff$type == "five_prime_UTR"]<-"5'-UTR"
 annotation<-unique(gff$type)
 
 # for each annotation type generate an SFS
-
 for ( i in annotation[-7] ) {
   # subset the gff
   annot<-subset(gff,subset=type == i)
@@ -717,6 +728,21 @@ Next if is important to examine Tajima's D over CNV of various frequency.
 ####
 
 ggplot(data=downGroup, aes(x=(38-freq)/38, y=td)) +
+  theme_bw()+
+  geom_smooth(colour="darkgreen", size=2)+
+  ylab("Tajima's D")+
+  xlab("CNV frequency")+
+  theme(axis.title.x = element_text(size=a.size,vjust=-0.3),axis.title.y = element_text(size=a.size,vjust=1.6),
+        axis.text.x = element_text(size=a.size),axis.text.y = element_text(size=a.size-5),
+        strip.text.y=element_text(size=25,angle=0),
+        legend.background=element_blank())
+```
+
+But, what about removing that "deletion" spot from chromasome 6, to exclude the posibility that this is the sole cause of the observed trend.
+
+```{r, warning=FALSE,message=FALSE}
+
+ggplot(data=downGroup[downGroup$chr != 6,], aes(x=(38-freq)/38, y=td)) +
   theme_bw()+
   geom_smooth(colour="darkgreen", size=2)+
   ylab("Tajima's D")+
@@ -890,13 +916,32 @@ The ms sims can be run as such:
  ms 38 100 -t 9000 -p 6 > test.ms
 ```
 
+## The Chromosome 6 "problem"
+
 Now load in an example data set from the SweeD output. I'm picking chromosome six because of the apparently interesting region that is seems to be a deletion in Palmar Chico.
 
 
-```{r}
+```{r, warning=FALSE,message=FALSE}
 
+# load in the SweeD data
 SweeD<-fread("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/SweeD_Report.6_sweepfinder_input.txt_output")
 
-plot(SweeD$Position/10^6,SweeD$Likelihood, xlim=c(5,25), type = "n", ylab = "CLR statistic", xlab="position (Mbp)", cex.lab=1.5, cex.axis=1.5)
+# read in the ITS Blast data
+blst<-read.table("/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/chr6_rDNA.blst")
+
+# filter the data
+blst<-data.table(blst)
+# remove any duplicate rows
+blst<-(unique(blst))
+# trim the data
+blst<-subset(blst,subset=V2 > 98 & V3 < 25000000)
+
+# plot the data
+plot(SweeD$Position/10^6,SweeD$Likelihood, xlim=c(5,25), type = "n", ylab = "CLR statistic", xlab="position (Mbp)", cex.lab=1.5, cex.axis=1.5, ylim=c(0,100))
 lines(SweeD$Position/10^6,SweeD$Likelihood, col = "red")
+lines(start(subset(MB.windows,subset=seqnames==6))/10^6,subset(MB.windows,subset=seqnames==6)$propCNV*100, col = "blue")
+par(new=T)
+plot(density(blst$V3/10^6),xlim=c(5,25),axes=FALSE,main=NA,xlab=NA,ylab=NA, col="green")
+legend("topright", legend=c("CLR score","density of 18S rDNA","% CNV calls"), col=c("red","green","blue"), pch = 15)
+
 ```
