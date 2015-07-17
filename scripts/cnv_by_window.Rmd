@@ -141,7 +141,7 @@ echo "Starting Job:"
 date
 
 # calculate the .saf file
-cmd="angsd -bam ../../../teosinte_parents/file.list.txt -doSaf 2 -out teosinte19 -anc ../../../teosinte_parents/genomes/TRIP.fa -ref ../../../teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa -GL 1 -P 18 -indF ../../../teosinte_parents/angsd_outpu$
+cmd="angsd -bam ../../../teosinte_parents/file.list.txt -doSaf 2 -out teosinte19 -anc ../../../teosinte_parents/genomes/TRIP.fa -ref ../../../teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa -GL 1 -P 18 -indF ../../../teosinte_parents/angsd_output/teo_parents19e-6.indF -rf region.file -doMaf 1 -doMajorMinor 1 -minMapQ 30 -minQ 20 -minInd 1 -uniqueOnly 0"
 echo $cmd
 #eval $cmd
 
@@ -151,7 +151,7 @@ echo $cmd
 #eval $cmd
 
 # no fiure out region wide thetas
-cmd="angsd -bam ../../../teosinte_parents/file.list.txt -out teosinte19_thetas.sfs -doThetas 1 -doSaf 2 -ref ../../../teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa -indF ../../../teosinte_parents/angsd_output/teo_parents19e-6.indF -pest teosin$
+cmd="angsd -bam ../../../teosinte_parents/file.list.txt -out teosinte19_thetas.sfs -doThetas 1 -doSaf 2 -ref ../../../teosinte_parents/genomes/Zea_mays.AGPv3.22.dna.genome.fa -indF ../../../teosinte_parents/angsd_output/teo_parents19e-6.indF -pest teosinte19.sfs -anc ../../../teosinte_parents/genomes/TRIP.fa -rf region.file -doMaf 1 -doMajorMinor 1 -GL 1 -P 18 -minMapQ 30 -minQ 20 -minInd 1 -uniqueOnly 0"
 echo $cmd
 #eval $cmd
 
@@ -374,14 +374,14 @@ Before we start, it might be a good idea to screen out windows that have really 
 ####
 
 maxDepth<-10
-minDepth<-0.01
+minDepth<-0.1
 # trim the dataset
 gcNorm<-subset(gcNorm,subset=gcNorm$B73 < maxDepth )
 gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 
 ```
 
-## Runnig the CNV calling function
+## Running the CNV calling function
 
 ```{r, message=FALSE,warning=FALSE,results='hide'}
 
@@ -390,7 +390,7 @@ gcNorm<-subset(gcNorm, subset= gcNorm$B73 > minDepth)
 ####
 
 source("/Users/simonrenny-byfield/GitHubRepos/cnvwin/scripts/callCNV.R")
-cnvs<-callCNV(gcNorm,samples,limit=0.7,limitHom=3.2)
+cnvs<-callCNV(gcNorm,samples,limit=1.2,limitHom=3)
 #dev.off()
 
 # take a look at the genic region in terms of coverage
@@ -722,7 +722,6 @@ Next if is important to examine Tajima's D over CNV of various frequency.
 
 ```{r, warning=FALSE,message=FALSE}
 
-
 ####
 # Do some plotting
 ####
@@ -945,3 +944,11 @@ plot(density(blst$V3/10^6),xlim=c(5,25),axes=FALSE,main=NA,xlab=NA,ylab=NA, col=
 legend("topright", legend=c("CLR score","density of 18S rDNA","% CNV calls"), col=c("red","green","blue"), pch = 15)
 
 ```
+
+
+## How close are CNVs to singals of selection?
+
+In order to examine this we need evidence of sites that have experienced natural selection (i.e. the SweeD data). Assuming the 
+SweeD outliers are good we can use these and examine how close they are to positions of CNV across the genome. We can use the `nearest()` function of the `GenomicRanges`.
+
+

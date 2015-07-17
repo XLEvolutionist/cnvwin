@@ -28,7 +28,6 @@ callCNV<-function(gcNorm,samples,ref="B73",limit=1.2,limitHom=6){
     ratio<-data.matrix(ratio)
     ratio<-log(ratio+0.001)
     stdev<-sd(ratio)
-    stddevs<-c(stddevs,stdev)
     d<-(mean(ratio)-ratio)
     # plot the ratio as a histogram
     #p2<-hist(ratio, main=paste0(s," ratio (sample/ref)"),
