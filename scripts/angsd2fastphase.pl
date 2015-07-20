@@ -120,10 +120,9 @@ foreach my $key ( @keys ) {
 		else { ${$bottom{$key}}[$i]= 1 }
 		 
 	}# for
-	
+	print "# ", $key , "\n";
 	while ( my @x = splice ( @{$top{$key}} , 0 , $n ) and 
 					my @x2 = splice( @{$bottom{$key}} , 0 , $n ) )  {
-		print "# ", $key , "\n";
 	 	print @x , "\n";
 	 	print @x2 , "\n";
 	}#while
