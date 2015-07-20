@@ -25,6 +25,7 @@ use List::MoreUtils qw(indexes);
 # define some useful variables
 my %top;
 my %bottom;
+my @pos;
 
 # open a file to which bed file info will be exported
 open (BED , ">$ARGV[2].temp.bed") || die "could not open file $ARGV[2].temp.bed:$!\n";
@@ -44,6 +45,7 @@ while ( <IN> ) {
 		push(@{$top{$sampleNum}} , $snps[0] );
 		push(@{$bottom{$sampleNum}} , $snps[1] );
 	}# foreach
+	push(@pos,$pos);
 }#while
 
 ###############################################
@@ -67,6 +69,12 @@ chomp @fasta;
 
 # now find the indices of the "N" nucleotides, so the can be removed later
 my @x = indexes { !/N/i } @fasta;
+my @pos = @pos[@x];
+
+#open up an output file to record the included positions
+open(POS , ">$ARGV[2].pos" ) || die "Could not open file >$ARGV[2].pos:$!\n";
+#record the final positions
+print POS join("\n",@pos);
 
 # cleanse  @fasta info of Ns
 @fasta = grep(!/N/i , @fasta);
