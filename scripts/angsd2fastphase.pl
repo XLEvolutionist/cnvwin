@@ -91,7 +91,7 @@ print scalar @keys , "\n";
 # the number of segregating sites
 print scalar @fasta , "\n";
 
-my $n=100;
+my $n=500000;
 
 ########################################################
 # Loop through each samples, modify and print the data #
