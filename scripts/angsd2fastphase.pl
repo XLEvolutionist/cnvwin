@@ -5,6 +5,10 @@ use List::MoreUtils qw(indexes);
 
 # usage: script.pl <genotype.angsd.output> > output
 
+# if the file is stil gziped then the inout file should be:
+# <(zcat genotype.angsd.output | awk '{$1 == 1 print}' )
+# to go through chromosome one..
+
 				##################
 ####################################################
 # Convert a ANGSD genotype file to fastPHASE input #
