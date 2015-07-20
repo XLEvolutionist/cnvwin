@@ -1,0 +1,5 @@
+Module BUILD 1.6 Loaded.
+Module slurm/2.6.5 loaded 
+slurmd[bigmem1]: error: Job 4834885 exceeded 10240000 KB memory limit, being killed
+slurmd[bigmem1]: error: Exceeded job memory limit
+slurmd[bigmem1]: error: *** JOB 4834885 CANCELLED AT 2015-07-20T10:52:22 ***

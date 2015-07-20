@@ -1,0 +1,10 @@
+utility.c(2245):ERROR:50: Cannot open file '/share/apps/modulefiles/hpc/build/.version' for 'reading'
+locate_module.c(1224):ERROR:106: Magic cookie '#%Module' missing in '/share/apps/modulefiles/hpc/build/.version'
+utility.c(2245):ERROR:50: Cannot open file '/share/apps/modulefiles/hpc/build/1.8.1' for 'reading'
+utility.c(2245):ERROR:50: Cannot open file '/share/apps/modulefiles/hpc/build/1.6' for 'reading'
+utility.c(2245):ERROR:50: Cannot open file '/share/apps/modulefiles/hpc/build/1.5' for 'reading'
+utility.c(2245):ERROR:50: Cannot open file '/share/apps/modulefiles/hpc/build/1.8.1' for 'reading'
+Module BUILD 1.6 Loaded.
+utility.c(2245):ERROR:50: Cannot open file '/share/apps/modulefiles/hpc/slurm/2.6.5' for 'reading'
+utility.c(2245):ERROR:50: Cannot open file '/share/apps/modulefiles/hpc/slurm/2.6.0' for 'reading'
+Module slurm/2.6.5 loaded 

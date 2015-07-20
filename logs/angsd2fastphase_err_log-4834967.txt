@@ -1,0 +1,4 @@
+Module BUILD 1.6 Loaded.
+Module slurm/2.6.5 loaded 
+could not open file:No such file or directory
+slurmd[bigmem6]: error: *** JOB 4834967 CANCELLED AT 2015-07-20T11:43:48 ***

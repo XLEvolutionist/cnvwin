@@ -1,0 +1,3 @@
+Module BUILD 1.6 Loaded.
+Module slurm/2.6.5 loaded 
+/var/spool/slurmd/job4834887/slurm_script: line 15: 1=: command not found

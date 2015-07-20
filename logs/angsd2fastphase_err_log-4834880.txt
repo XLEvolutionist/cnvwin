@@ -1,3 +1,4 @@
 Module BUILD 1.6 Loaded.
 Module slurm/2.6.5 loaded 
+awk: fatal: `$1' is not a legal variable name
 Error: The requested bed file (temp.bed) could not be opened. Exiting!

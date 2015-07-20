@@ -1,0 +1,4 @@
+Module BUILD 1.6 Loaded.
+Module slurm/2.6.5 loaded 
+/var/spool/slurmd/job4834891/slurm_script: eval: line 19: unexpected EOF while looking for matching `''
+/var/spool/slurmd/job4834891/slurm_script: eval: line 20: syntax error: unexpected end of file

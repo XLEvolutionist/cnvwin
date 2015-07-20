@@ -27,11 +27,11 @@ my %top;
 my %bottom;
 
 # open a file to which bed file info will be exported
-open (BED , ">temp.bed") || die "could not open file:$!\n";
+open (BED , ">$ARGV[2].temp.bed") || die "could not open file $ARGV[2].temp.bed:$!\n";
 
 # open the input file
 
-open ( IN , "<$ARGV[0]" ) || die "could not open file:$!\n";
+open ( IN , "<$ARGV[0]" ) || die "could not open file $ARGV[0]:$!\n";
 
 # cycle through the file
 while ( <IN> ) {
@@ -50,13 +50,13 @@ while ( <IN> ) {
 # Make a fasta file of all the variable sites #
 ###############################################
 
-system("bedtools getfasta -fi $ARGV[1] -bed temp.bed -fo temp.fasta");
+system("bedtools getfasta -fi $ARGV[1] -bed $ARGV[2].temp.bed -fo $ARGV[2].temp.fasta");
 
 ########################################################################
 # load in that data into an array, this contains the ancestral alleles #
 ########################################################################
 
-open ( INFASTA , "temp.fasta" ) || die "could not open file:$!\n";
+open ( INFASTA , "<$ARGV[2].temp.fasta" ) || die "could not open file $ARGV[2].temp.fasta:$!\n";
 
 # slurp the file in
 my @fasta = <INFASTA>;

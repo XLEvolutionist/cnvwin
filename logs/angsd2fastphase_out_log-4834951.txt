@@ -1,0 +1,3 @@
+Starting Job:
+Mon Jul 20 11:20:20 PDT 2015
+perl ../scripts/angsd2fastphase.pl <( zcat ../../custom_cnv/sfs/windows/genotypes_teosinte19.geno.gz | awk '$1==8 {print}' ) ../../teosinte_parents/genomes/TRIP.fa 8 > 8_genotypes.fastPh

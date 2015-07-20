@@ -1,0 +1,12 @@
+Module BUILD 1.6 Loaded.
+Module slurm/2.6.5 loaded 
+Scalar found where operator expected at ../scripts/angsd2fastphase.pl line 53, near ""bedtools getfasta -fi $ARGV[1] -bed "$ARGV"
+	(Missing operator before $ARGV?)
+String found where operator expected at ../scripts/angsd2fastphase.pl line 53, near "]".temp.bed -fo ""
+	(Missing operator before ".temp.bed -fo "?)
+Scalar found where operator expected at ../scripts/angsd2fastphase.pl line 53, near "".temp.bed -fo "$ARGV"
+	(Missing operator before $ARGV?)
+String found where operator expected at ../scripts/angsd2fastphase.pl line 53, near "]".temp.fasta""
+	(Missing operator before ".temp.fasta"?)
+syntax error at ../scripts/angsd2fastphase.pl line 53, near ""bedtools getfasta -fi $ARGV[1] -bed "$ARGV"
+Execution of ../scripts/angsd2fastphase.pl aborted due to compilation errors.
