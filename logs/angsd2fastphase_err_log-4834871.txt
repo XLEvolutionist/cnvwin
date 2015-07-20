@@ -1,0 +1,3 @@
+Module BUILD 1.6 Loaded.
+Module slurm/2.6.5 loaded 
+Error: The requested fasta database file (/Users/simonrenny-byfield/GitHubRepos/cnvwin/data/TRIP.fa) could not be opened. Exiting!

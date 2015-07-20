@@ -1,0 +1,5 @@
+Starting Job:
+Mon Jul 20 10:04:23 PDT 2015
+perl ../scripts/angsd2fastphase.pl <( zcat ../../custom_cnv/sfs/windows/genotypes_teosinte19.geno.gz | awk '==10 {print}' )
+Ending Job:
+Mon Jul 20 10:04:23 PDT 2015

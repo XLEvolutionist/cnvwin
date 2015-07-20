@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use List::MoreUtils qw(indexes);
 
-# usage: script.pl <genotype.angsd.output> > output
+# usage: script.pl <genotype.angsd.output> <ancetral.fa> > output
 
 # if the file is stil gziped then the inout file should be:
 # <(zcat genotype.angsd.output | awk '{$1 == 1 print}' )
@@ -50,7 +50,7 @@ while ( <IN> ) {
 # Make a fasta file of all the variable sites #
 ###############################################
 
-system("bedtools getfasta -fi /Users/simonrenny-byfield/GitHubRepos/cnvwin/data/TRIP.fa -bed temp.bed -fo temp.fasta");
+system("bedtools getfasta -fi $ARGV[1] -bed temp.bed -fo temp.fasta");
 
 ########################################################################
 # load in that data into an array, this contains the ancestral alleles #
