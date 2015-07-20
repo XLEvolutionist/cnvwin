@@ -949,6 +949,21 @@ legend("topright", legend=c("CLR score","density of 18S rDNA","% CNV calls"), co
 ## How close are CNVs to singals of selection?
 
 In order to examine this we need evidence of sites that have experienced natural selection (i.e. the SweeD data). Assuming the 
-SweeD outliers are good we can use these and examine how close they are to positions of CNV across the genome. We can use the `nearest()` function of the `GenomicRanges`.
+SweeD outliers are good we can use these and examine how close selected loci are to positions of CNV across the genome. The logic is that some CNVs will be beneficial and will sweep to fixation due to positive selection. As we cannot look at diversity at the CNV locus (because the removal of that locus is being selected for) we look at the adjacent region of the chromosome and llok for patterns consistant with selective sweeps.
+
+We can use the `nearest()` function of the `GenomicRanges` as such:
+
+```{r, warning=FALSE,message=FALSE}
+
+SweeD$end<-SweeD$Position
+SweeD$seqnames<-6
+colnames(SweeD)[1]<-"start"
+SweeD<-subset(SweeD,select=c("seqnames","start","end","Likelihood","Alpha"))
+SweeD<-data.frame2GRanges(as.data.frame(SweeD),keepColumns = TRUE)
+
+nearestSweeD<-distanceToNearest(subset(downGRanges,subset=seqnames == 6),subset(SweeD, subset=Likelihood > 20))
+
+length(subset(nearestSweeD, subset=distance < 10000))
+```
 
 
