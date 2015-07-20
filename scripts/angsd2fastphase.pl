@@ -69,7 +69,7 @@ chomp @fasta;
 
 # now find the indices of the "N" nucleotides, so the can be removed later
 my @x = indexes { !/N/i } @fasta;
-my @pos = @pos[@x];
+@pos = @pos[@x];
 
 #open up an output file to record the included positions
 open(POS , ">$ARGV[2].pos" ) || die "Could not open file >$ARGV[2].pos:$!\n";
@@ -90,6 +90,8 @@ my @keys =  keys ( %top );
 print scalar @keys , "\n";
 # the number of segregating sites
 print scalar @fasta , "\n";
+
+my $n=100;
 
 ########################################################
 # Loop through each samples, modify and print the data #
@@ -118,9 +120,21 @@ foreach my $key ( @keys ) {
 		else { ${$bottom{$key}}[$i]= 1 }
 		 
 	}# for
-	print "# ", $key , "\n";
-	print @{$top{$key}} , "\n";
-	print @{$bottom{$key}} , "\n";
+	
+	while ( my @x = splice ( @{$top{$key}} , 0 , $n ) and 
+					my @x2 = splice( @{$bottom{$key}} , 0 , $n ) )  {
+		print "# ", $key , "\n";
+	 	print @x , "\n";
+	 	print @x2 , "\n";
+	}#while
+	
+	#print @{$top{$key}} , "\n";
+	#print @{$bottom{$key}} , "\n";
 }#for
 
 exit;
+
+###############
+# Subroutines #
+###############
+
