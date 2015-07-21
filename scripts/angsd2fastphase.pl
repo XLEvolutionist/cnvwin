@@ -123,12 +123,12 @@ foreach my $key ( @keys ) {
 	}# for
 	#break up the line according to the max number of characters allowed per line
 	print "# id ", $key , "\n";
-	while ( my @x = splice ( @{$top{$key}} , 0 , $n ) and 
-					my @x2 = splice( @{$bottom{$key}} , 0 , $n ) )  {
+	while ( my @x = splice ( @{$top{$key}} , 0 , $n ) )  {
 	 	print @x ,"\n";
-	 	print @x2 ,"\n";
 	}#while
-	
+	while ( my @x = splice ( @{$bottom{$key}} , 0 , $n ) )  {
+	 	print @x ,"\n";
+	}#while
 	#print @{$top{$key}} , "\n";
 	#print @{$bottom{$key}} , "\n";
 }#for
