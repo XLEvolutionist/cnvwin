@@ -92,7 +92,7 @@ print scalar @keys , "\n";
 print scalar @fasta , "\n";
 
 # fastPHASE cannot take more than 1000000 on each line, so we have to break up the lines
-my $n=10000000;
+my $n=499999;
 
 ########################################################
 # Loop through each samples, modify and print the data #
