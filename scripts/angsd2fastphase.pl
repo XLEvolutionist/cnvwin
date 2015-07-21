@@ -91,7 +91,7 @@ print scalar @keys , "\n";
 # the number of segregating sites
 print scalar @fasta , "\n";
 
-my $n=500000;
+my $n=100000;
 
 ########################################################
 # Loop through each samples, modify and print the data #
@@ -123,8 +123,8 @@ foreach my $key ( @keys ) {
 	print "# ", $key , "\n";
 	while ( my @x = splice ( @{$top{$key}} , 0 , $n ) and 
 					my @x2 = splice( @{$bottom{$key}} , 0 , $n ) )  {
-	 	print @x , "\n";
-	 	print @x2 , "\n";
+	 	print @x ,"\n";
+	 	print @x2 ,"\n";
 	}#while
 	
 	#print @{$top{$key}} , "\n";
