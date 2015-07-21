@@ -91,6 +91,7 @@ print scalar @keys , "\n";
 # the number of segregating sites
 print scalar @fasta , "\n";
 
+# fastPHASE cannot take more than 1000000 on each line, so we have to break up the lines
 my $n=1000000;
 
 ########################################################
@@ -120,6 +121,7 @@ foreach my $key ( @keys ) {
 		else { ${$bottom{$key}}[$i]= 1 }
 		 
 	}# for
+	#break up the line according to the max number of characters allowed per line
 	print "# ", $key , "\n";
 	while ( my @x = splice ( @{$top{$key}} , 0 , $n ) and 
 					my @x2 = splice( @{$bottom{$key}} , 0 , $n ) )  {
