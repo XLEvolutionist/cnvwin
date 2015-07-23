@@ -3,7 +3,7 @@ use strict;
 use warnings;
 use List::MoreUtils qw(indexes);
 
-# usage: script.pl <genotype.angsd.output> <ancetral.fa> > output
+# usage: script.pl <genotype.angsd.output> <ancestral.fa> > output
 
 # if the file is stil gziped then the inout file should be:
 # <(zcat genotype.angsd.output | awk '{$1 == 1 print}' )
@@ -73,8 +73,11 @@ my @x = indexes { !/N/i } @fasta;
 
 #open up an output file to record the included positions
 open(POS , ">$ARGV[2].pos" ) || die "Could not open file >$ARGV[2].pos:$!\n";
-#record the final positions
-print POS join("\n",@pos);
+#record the final positions and create a SNP file for `rehh`
+
+for my $i ( 0 .. $#pos ) {
+	print "$i\t$ARGV[2]\t$pos\t0\t1\n";
+}#foreach
 
 # cleanse  @fasta info of Ns
 @fasta = grep(!/N/i , @fasta);

@@ -1,0 +1,8 @@
+---
+title: "Using rEHH for singatures of selection"
+author: "Simon Renny-Byfield"
+date: "July 23, 2015"
+output: html_document
+---
+
+Thid document will describe the process of using *phased* genotype data (from `fastPHASE`) to look for patterns of extended haplotype information indicative of selection. My approach will take andvantage 
