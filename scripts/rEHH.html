@@ -68,7 +68,18 @@ img {
 </div>
 
 
-<p>Thid document will describe the process of using <em>phased</em> genotype data (from <code>fastPHASE</code>) to look for patterns of extended haplotype information indicative of selection. My approach will take andvantage</p>
+<p>Thid document will describe the process of using <em>phased</em> genotype data (from <code>fastPHASE</code>) to look for patterns of extended haplotype homozygosity indicative of selection. My approach will take andvantage of the r package <code>rehh</code> which takes fastPHASE output as input.</p>
+<pre class="r"><code>library(rehh)
+# make the hap object from the fastPHASE input
+hap&lt;-data2haplohh(hap_file=&quot;bta12_hapguess_switch.out&quot;,map_file=&quot;map.inp&quot;,chr.name=12)
+# scan genome wide
+res&lt;-scan_hh(hap)
+# this standardises the values
+res.ihs&lt;-ihh2ihs(res)
+# some plotting
+ihsplot(res.ihs$res.ihs,plot.pval=TRUE,ylim.scan=2,main=&quot;iHS (CGU cattle breed)&quot;)
+rsbplot(res)
+distribplot(res.ihs$res.ihs[,3])</code></pre>
 
 
 </div>

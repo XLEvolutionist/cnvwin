@@ -5,4 +5,35 @@ date: "July 23, 2015"
 output: html_document
 ---
 
-Thid document will describe the process of using *phased* genotype data (from `fastPHASE`) to look for patterns of extended haplotype information indicative of selection. My approach will take andvantage 
+Thid document will describe the process of using *phased* genotype data (from `fastPHASE`) to look for patterns of extended haplotype homozygosity indicative of selection. My approach will take andvantage of the r package `rehh` which takes fastPHASE output as input.
+
+Firstly, the fastPHASE output need to be converted from 0,1 and ? for ancestral, derived and unknown to 1,2 and 0 (for ancestral, derived and unknowm). This can be done using a series of `tr` commands:
+
+```
+cat fastPHASE.output | tr 1 2 | tr 0 1 | tr ? 0 > modified.output
+```
+and...
+```
+cat 10.pos | awk -F'\t' '{ gsub("1", "2", $5); gsub("0","1",$4); print }' > modified.pos
+```
+
+```{r,warning=FALSE,messages=FALSE, eval=FALSE}
+library(rehh)
+
+# for each input file
+
+for ( i in c(6,10) ) {
+  print(paste0("loading file:",i))
+  # make the hap object from the fastPHASE input
+  hap<-data2haplohh(hap_file=paste0(i,".output_hapguess_mod_switch.out"),map_file=paste0(i,".mod.pos"))
+  # scan genome wide
+  res<-scan_hh(hap)
+  # this standardises the values
+  #res.ihs<-ihh2ihs(res)
+  # some plotting
+  #ihsplot(res.ihs$res.ihs,plot.pval=TRUE,ylim.scan=2,main="iHS (CGU cattle breed)")
+  #rsbplot(res)
+  #distribplot(res.ihs$res.ihs[,3])
+}#for
+```
+
