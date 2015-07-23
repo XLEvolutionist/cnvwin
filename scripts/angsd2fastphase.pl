@@ -76,7 +76,7 @@ open(POS , ">$ARGV[2].pos" ) || die "Could not open file >$ARGV[2].pos:$!\n";
 #record the final positions and create a SNP file for `rehh`
 
 for my $i ( 0 .. $#pos ) {
-	print "$i\t$ARGV[2]\t$pos\t0\t1\n";
+	print "$i\t$ARGV[2]\t$pos[$i]\t0\t1\n";
 }#foreach
 
 # cleanse  @fasta info of Ns
